@@ -1525,8 +1525,9 @@ function renderAtt(){
   const af=ST.attFilter||'all',kv=f=>AKEYS(f).map(k=>(ST.att[f.code]||{})[k]);
   document.querySelectorAll('[data-af]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.af===af)));$('att-group').checked=ST.attGroup!==false;
   FAMS.forEach(f=>{if(q&&!f.code.toUpperCase().includes(q))return;
-    if(af==='pend'&&(f.absent||kv(f).some(v=>v)))return; // nobody in the family marked yet
-    if(af==='vienen'&&(f.absent||kv(f).every(v=>v==='no')))return;const g=ST.attGroup===false?'':f.grades[0]||'Sin grado';(groups[g]=groups[g]||[]).push(f);});
+    const keep=attKeep.has(f.code); // a family just touched stays a few seconds so the rest can be marked
+    if(af==='pend'&&!keep&&(f.absent||kv(f).some(v=>v)))return; // nobody in the family marked yet
+    if(af==='vienen'&&!keep&&(f.absent||kv(f).every(v=>v==='no')))return;const g=ST.attGroup===false?'':f.grades[0]||'Sin grado';(groups[g]=groups[g]||[]).push(f);});
   if(groups[''])groups[''].sort((a,b)=>a.code.localeCompare(b.code));
   $('att-list').innerHTML=Object.keys(groups).sort().map(g=>(g?`<h4>${esc(g)}</h4>`:'')+groups[g].map(f=>{
     if(f.absent)return `<div class="arow out"><span class="acode">${esc(f.code)}</span><span class="anote">No asiste (marcado en la lista)</span></div>`;
@@ -1535,9 +1536,11 @@ function renderAtt(){
       AKEYS(f).map(k=>{const v=a[k]||'pend';return `<button class="ap ${v}" data-fam="${esc(f.code)}" data-k="${k}" aria-label="${esc(f.code)} ${k}: ${v==='si'?'viene':v==='no'?'no viene':'pendiente'}">${AEMO(f,k)}${(()=>{const n=k==='papa'||k==='mama'?(showNames()&&NAMES[f.code]?NAMES[f.code][k]:''):kidName(f.code,f.grades[+k.slice(1)-1]||f.grades[0],+k.slice(1));return n?`<span class="an">${esc(n)}</span>`:'';})()}</button>`;}).join('')+`</div>`;}).join('')).join('');
 }
 let attTimer;
+const attKeep=new Map(),ATT_KEEP_MS=6000;
 function attChanged(){saveState();renderAtt();clearTimeout(attTimer);attTimer=setTimeout(rebuild,400);}
 $('att-list').addEventListener('click',e=>{const b=e.target.closest('button[data-fam]');if(!b)return;
   const f=FAMS.find(x=>x.code===b.dataset.fam);if(!f)return;const a=ST.att[f.code]=ST.att[f.code]||{};
+  clearTimeout(attKeep.get(f.code));attKeep.set(f.code,setTimeout(()=>{attKeep.delete(f.code);if(!apanel.hidden)renderAtt();},ATT_KEEP_MS));
   if(b.dataset.k){const v=a[b.dataset.k];a[b.dataset.k]=!v?'si':v==='si'?'no':undefined;if(!a[b.dataset.k])delete a[b.dataset.k];}
   else{const all=AKEYS(f).every(k=>a[k]==='si');AKEYS(f).forEach(k=>{a[k]=all?'no':'si';});}
   attChanged();});
