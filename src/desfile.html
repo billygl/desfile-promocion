@@ -219,7 +219,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
         <button class="help act" id="need-draw">Abrir configuración avanzada</button>
       </div>
       <div class="bar">
-        <div class="stages" role="group" aria-label="Momentos"><button id="st-1" aria-pressed="false" title="Posición inicial: la columna del desfile">Desfile</button><button id="play" aria-pressed="false">▶ Transición</button><button id="st-2" aria-pressed="false" title="Posición final: la barra frente al jurado">Barra</button></div>
+        <div class="stages" role="group" aria-label="Momentos"><button id="st-1" aria-pressed="false" title="Todos juntos antes de entrar al patio">Inicio</button><button id="play" aria-pressed="false">▶ Desfile</button><button id="st-2" aria-pressed="false" title="Posición final: la barra frente al jurado">Barra</button></div>
         <input id="time" type="range" min="0" max="100" step="0.1" value="0" aria-label="Tiempo">
         <span id="tlabel">0:00</span>
         <select id="speed" aria-label="Velocidad"><option value="1">×1</option><option value="3">×3</option><option value="6" selected>×6</option><option value="12">×12</option></select>
@@ -329,6 +329,7 @@ const BAR_PX=46;
 // patio walls (plan pixels): the Tafur side behind the stage and the Sihuas side
 const WALLS=[[[300,225],[430,55]],[[430,55],[540,135]]];
 const V=1.0; // m/s walking pace
+const KC=0.45; // row spacing while waiting to enter, relative to the marching spacing
 const WORDS=['LOVE','HONOR','SERVICE'];
 const ROLE={
   padre:{c:'#1b5e34',n:'Papá / mamá'},
@@ -728,8 +729,11 @@ function plan(c,fams){
   Object.values(byRow).forEach(list=>list.sort((a,b)=>a.b.al-b.b.al).forEach((p,i)=>p.bpos=i+1));
 
   P.forEach(p=>{const e=pathAt(PATH.L),d=pathDir(PATH.L);p.e={x:e.x-d.z*p.lat,z:e.z+d.x*p.lat};p.D=Math.hypot(p.b.x-p.e.x,p.b.z-p.e.z);});
-  const tEnd=Math.max(...P.map(p=>(p.lon+PATH.L+p.D)/V))+2;
-  return {P,att,fams,kids:P.filter(p=>p.kid).length,parents:P.filter(p=>!p.kid).length,rows:rows.length,maxLon,sections,Lb,nb,mid,kRowsB,pRowsB,blocks,GRADES,mode:c.mode,bloques:c.mode==='columna'&&c.bloques,letterRow:letters.length>0,tEnd,tStage2:PATH.L/V,tInit:Math.min(maxLon,PATH.L)/V,A,B,ctr,at,u};
+  // at the start everyone waits packed (rows at half spacing) before the patio; walking opens the column to full spacing
+  // the head waits just before the patio: the second turn of the route (or 90% of a short route)
+  const entry=PATH.cum.length>3?PATH.cum[2]-1.5:PATH.L*0.9,s0=Math.max(0,Math.min(maxLon*KC,entry));
+  const tEnd=Math.max(...P.map(p=>(PATH.L+p.D+p.lon-s0)/V))+2;
+  return {P,att,fams,kids:P.filter(p=>p.kid).length,parents:P.filter(p=>!p.kid).length,rows:rows.length,maxLon,sections,Lb,nb,mid,kRowsB,pRowsB,blocks,GRADES,mode:c.mode,bloques:c.mode==='columna'&&c.bloques,letterRow:letters.length>0,tEnd,tStage2:PATH.L/V,tInit:0,s0,A,B,ctr,at,u};
 }
 
 /* ---------- stats, diagrams, table ---------- */
@@ -1186,7 +1190,7 @@ function rebuild(){
 let firstBuild=true;
 
 function pose(p,t){
-  const s=V*t-p.lon;
+  const s=Math.max(PL.s0-KC*p.lon,PL.s0+V*t-p.lon);
   if(s<PATH.L){const c=pathAt(s),d=pathDir(s);return {x:c.x-d.z*p.lat,z:c.z+d.x*p.lat,fx:d.x,fz:d.z,walk:s,state:s<0?0:1};}
   const k=p.D>0?Math.min(1,(s-PATH.L)/p.D):1;
   const x=p.e.x+(p.b.x-p.e.x)*k,z=p.e.z+(p.b.z-p.e.z)*k;
@@ -1224,7 +1228,7 @@ function update(t){
     banner.scale.set(len,bh,1);banner.rotation.y=Math.atan2(a.fx,a.fz);}
   {const atI=!playing&&Math.abs(t-PL.tInit)<0.05,atF=!playing&&t>=PL.tEnd-0.05;$('st-1').setAttribute('aria-pressed',String(atI));$('st-2').setAttribute('aria-pressed',String(atF));}
   if(promoGroup)promoGroup.visible=arrived===PL.P.length;
-  if(!drawMode)$('phase').textContent=(!playing&&Math.abs(t-PL.tInit)<0.05?'Inicio · columna del desfile':(arrived===PL.P.length?'Barra lista · ¡a cantar!':arrived>0?`Formando barra · ${arrived}/${PL.P.length}`:started===0?'Ingreso':`Desfile · ${started}/${PL.P.length} en ruta`));
+  if(!drawMode)$('phase').textContent=(!playing&&Math.abs(t-PL.tInit)<0.05?'Inicio · todos juntos antes de entrar al patio':(arrived===PL.P.length?'Barra lista · ¡a cantar!':arrived>0?`Formando barra · ${arrived}/${PL.P.length}`:started===0?'Ingreso':`Desfile · ${started}/${PL.P.length} en ruta`));
   $('tlabel').textContent=fmtT(t-PL.tInit);
   if(view==='follow'){const h=PL.P.reduce((m,p)=>p.lon<m.lon?p:m).q;
     controls.target.lerp(new THREE.Vector3(h.x,1,h.z),0.08);camera.position.lerp(new THREE.Vector3(h.x-h.fx*16+6,13,h.z-h.fz*16+6),0.05);}
@@ -1261,7 +1265,7 @@ function showMoment(n){setPlaying(false);stageEnd=null;T=n===1?PL.tInit:PL.tEnd;
 function playStage(n){showMoment(n);}
 $('st-1').addEventListener('click',()=>playStage(1));
 $('st-2').addEventListener('click',()=>playStage(2));
-function setPlaying(v){playing=v;$('play').setAttribute('aria-pressed',String(v));$('play').textContent=v?'❚❚ Pausa':'▶ Transición';}
+function setPlaying(v){playing=v;$('play').setAttribute('aria-pressed',String(v));$('play').textContent=v?'❚❚ Pausa':'▶ Desfile';}
 $('play').addEventListener('click',()=>{if(!playing&&(T>=PL.tEnd-0.05||T<PL.tInit))T=PL.tInit;stageEnd=PL.tEnd;if(view==='follow')setView('3d');setPlaying(!playing);});
 $('time').addEventListener('input',e=>{T=parseFloat(e.target.value);setPlaying(false);update(T);});
 ['i-bat','i-len','i-face','i-mode','i-slot','i-bloques'].forEach(id=>$(id).addEventListener('change',rebuild));
