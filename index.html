@@ -280,7 +280,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
       </ul>
       <p class="note">Escala: 0.135 m por píxel del plano, ajustada al contorno del colegio en OpenStreetMap (±10%). La ruta y la línea de barra se redibujan con los botones del visor.</p>
     </details>
-  <footer class="ver">Versión 36 · 2026-10-17 07:22</footer>
+  <footer class="ver">Versión 37 · 2026-10-17 07:34</footer>
 </div>
 
 <aside id="att-panel" class="drawer" aria-label="Asistencia" hidden>
@@ -1484,6 +1484,8 @@ addEventListener('keydown',e=>{
 });
 // collapsible sections remember how you left them
 ST.closed=ST.closed||[];
+// families start with the summary collapsed (once; after that their own choice is kept)
+if(!ST.resumenDef){ST.resumenDef=1;if(!(new URLSearchParams(location.search).get('clave')||store.get('desfile-clave'))&&!ST.closed.includes('s-resumen'))ST.closed.push('s-resumen');}
 document.querySelectorAll('details.card').forEach(d=>{
   if(ST.closed.includes(d.id))d.open=false;
   d.addEventListener('toggle',()=>{ST.closed=[...document.querySelectorAll('details.card:not([open])')].map(x=>x.id);saveState();if(d.id==='s-visor'&&d.open)resize();});
