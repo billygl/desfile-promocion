@@ -48,7 +48,7 @@ button[aria-pressed="true"]{background:var(--accent);color:#fff}
 button:disabled,input:disabled{opacity:.4;cursor:not-allowed}
 .btn{border:1px solid var(--line);background:var(--surface)}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.needroute{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(340px,86%);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 30px rgba(0,0,0,.18);text-align:center;align-items:center}
+.needroute{position:absolute;left:50%;bottom:70px;transform:translateX(-50%);width:min(360px,86%);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 30px rgba(0,0,0,.18);text-align:center;align-items:center}
 .needroute span{font-size:.85rem;color:var(--muted)}
 .phase{font-family:var(--f-mono);font-size:.8rem;padding:6px 10px;border-radius:8px;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line)}
 .bar{position:absolute;left:10px;right:10px;bottom:10px;display:flex;gap:8px;align-items:center;background:color-mix(in srgb,var(--surface) 90%,transparent);border:1px solid var(--line);border-radius:10px;padding:6px 8px;backdrop-filter:blur(6px)}
@@ -163,7 +163,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
 <nav class="jump" aria-label="Secciones"><div class="in">
   <a href="#s-resumen">Resumen</a><a href="#s-visor">Visor 3D</a><a href="#s-desfile">Plano desfile</a><a href="#s-barra">Plano barra</a><a href="#s-tabla">Por familia</a><a href="#s-tareas">Tareas</a><a href="#s-criterios">Criterios</a>
   <select id="jump-sel" aria-label="Ir a la sección"><option value="">Ir a…</option><option value="#s-resumen">Resumen</option><option value="#s-visor">Visor 3D</option><option value="#s-desfile">Plano desfile</option><option value="#s-barra">Plano barra</option><option value="#s-tabla">Por familia</option><option value="#s-tareas">Tareas</option><option value="#s-criterios">Criterios</option></select>
-  <button class="help act" id="go-desfile" style="margin-left:auto"><span class="l">▶ Ver desfile</span><span class="s">▶ Desfile</span></button>
+  <button class="help act" id="go-desfile" style="margin-left:auto"><span class="l">Ver desfile</span><span class="s">Desfile</span></button>
   <button class="help act" id="go-barra"><span class="l">Ver barra</span><span class="s">Barra</span></button>
   <button class="help" id="open-config" title="Tecla C"><span class="l">Configuración</span><span class="s">Config.</span></button>
   <button class="help" data-help="general" title="Tecla L"><span class="l">Leyenda</span><span class="s">?</span></button>
@@ -191,6 +191,11 @@ tr.fam-start td{border-top:2px solid var(--line)}
           <button id="v-follow" aria-pressed="false">Seguir</button>
           <button id="v-jurado" aria-pressed="false">Vista del jurado</button>
         </div>
+        <div class="seg" role="group" aria-label="Capas">
+          <button id="ly-codes" aria-pressed="true" title="Códigos y nombres sobre las personas">Nombres</button>
+          <button id="ly-props" aria-pressed="true" title="Globos, letras, pancarta, dragón">Materiales</button>
+          <button id="ly-roofs" aria-pressed="true" title="Techos del escenario, graderías y corredor">Techos</button>
+        </div>
         <div class="seg tools" role="group" aria-label="Dibujar">
           <button id="d-route" aria-pressed="false">Dibujar ruta</button>
           <button id="d-bar" aria-pressed="false">Dibujar barra</button>
@@ -205,8 +210,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
         <button class="help act" id="need-draw">Dibujar recorrido</button>
       </div>
       <div class="bar">
-        <button id="play" aria-pressed="false">▶ Reproducir</button>
-        <div class="stages" role="group" aria-label="Etapas"><button id="st-1" aria-pressed="true">1 · Desfile</button><button id="st-2" aria-pressed="false">2 · Barra</button></div>
+        <div class="stages" role="group" aria-label="Momentos"><button id="st-1" aria-pressed="false">Inicio · desfile</button><button id="play" aria-pressed="false">▶ Transición</button><button id="st-2" aria-pressed="false">Final · barra</button></div>
         <input id="time" type="range" min="0" max="100" step="0.1" value="0" aria-label="Tiempo">
         <span id="tlabel">0:00</span>
         <select id="speed" aria-label="Velocidad"><option value="1">×1</option><option value="3">×3</option><option value="6" selected>×6</option><option value="12">×12</option></select>
@@ -266,7 +270,6 @@ tr.fam-start td{border-top:2px solid var(--line)}
     <label for="i-mode">Barra<select id="i-mode"><option value="columna">Columna junto a Prekinder y Nursery</option><option value="filas">Filas horizontales (toda la línea)</option></select></label>
     <label for="i-slot">Nuestra columna<select id="i-slot"><option value="centro">Al centro</option><option value="izq">Izquierda (vista del jurado)</option><option value="der">Derecha (vista del jurado)</option></select></label>
     <label for="i-face">Frente de la barra<select id="i-face"><option value="jurado">Hacia el jurado (escenario)</option><option value="sur">De espaldas al escenario</option></select></label>
-    <label class="chk" for="i-codes"><input id="i-codes" type="checkbox" checked> Mostrar códigos en 3D</label>
   </section>
   <div class="lg"><h3>Familias</h3>
     <p class="note" style="margin:0">Una familia por línea: código de 2 o 3 letras, cantidad de hijos (si no es 1), grado de cada hijo (K1, K2, K3) y roles opcionales. <span class="mono">-</span> al inicio = no asiste; mientras nadie esté marcado se usa la asistencia estimada. Roles: <span class="mono">aguila pancarta bat dragon muneco pompon direccion</span> (con <span class="mono">papa:</span> o <span class="mono">mama:</span> se elige quién) y <span class="mono">antorcha baston letra escudo</span> (hijo). <span class="mono">sin-papa</span> / <span class="mono">sin-mama</span> = asiste uno solo.</p>
@@ -287,6 +290,8 @@ tr.fam-start td{border-top:2px solid var(--line)}
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 const MAP_SRC="__MAP__";
+// the promotion's real banner and the school shield cropped from it
+const BANNER_SRC="__BANNER__", ESCUDO_SRC="__ESCUDO__", BANNER_RATIO=1024/545;
 const IMG_W=946, IMG_H=830, CX=473, CY=415;
 // mapa.jpg (1800x1176) = plan pixel * MAP_K + MAP_O
 const MAP_W=1800, MAP_H=1176, MAP_K=1.4161, MAP_O=[218.5,-2.8];
@@ -659,7 +664,7 @@ function plan(c,fams){
 
   P.forEach(p=>{const e=pathAt(PATH.L),d=pathDir(PATH.L);p.e={x:e.x-d.z*p.lat,z:e.z+d.x*p.lat};p.D=Math.hypot(p.b.x-p.e.x,p.b.z-p.e.z);});
   const tEnd=Math.max(...P.map(p=>(p.lon+PATH.L+p.D)/V))+2;
-  return {P,att,fams,kids:P.filter(p=>p.kid).length,parents:P.filter(p=>!p.kid).length,rows:rows.length,maxLon,sections,Lb,nb,mid,kRowsB,pRowsB,blocks,GRADES,mode:c.mode,letterRow:letters.length>0,tEnd,tStage2:PATH.L/V,A,B,ctr,at,u};
+  return {P,att,fams,kids:P.filter(p=>p.kid).length,parents:P.filter(p=>!p.kid).length,rows:rows.length,maxLon,sections,Lb,nb,mid,kRowsB,pRowsB,blocks,GRADES,mode:c.mode,letterRow:letters.length>0,tEnd,tStage2:PATH.L/V,tInit:Math.min(maxLon,PATH.L)/V,A,B,ctr,at,u};
 }
 
 /* ---------- stats, diagrams, table ---------- */
@@ -912,6 +917,7 @@ function cluster(g,c,cx,cy,cz,rx,ry,rz,n,r){g.add(mesh(G.ball,Array.isArray(c)?c
 const starTex=canvasTex(128,150,(x,w,h)=>{x.beginPath();x.moveTo(10,10);x.lineTo(w-10,10);x.lineTo(w-10,80);x.quadraticCurveTo(w-10,130,w/2,h-6);x.quadraticCurveTo(10,130,10,80);x.closePath();
   x.fillStyle='#2d6fb5';x.fill();x.lineWidth=8;x.strokeStyle='#ffffff';x.stroke();x.fillStyle='#ffffff';x.beginPath();
   for(let k=0;k<10;k++){const a=k*Math.PI/5-Math.PI/2,rr=k%2?14:34;x.lineTo(w/2+Math.cos(a)*rr,70+Math.sin(a)*rr);}x.fill();});
+const ESCUDO_TEX=new THREE.TextureLoader().load(ESCUDO_SRC);
 function makePerson(p){
   const g=new THREE.Group();
   const h=p.kid?1.25:1.68;
@@ -925,7 +931,7 @@ function makePerson(p){
     if(!p.kid)g.add(mesh(G.ball,'#2a1d14',0.15,0.08,0.15,0,h*0.78+0.22,0));
   }
   if(p.role!=='aguila')g.add(ball('#c99069',p.kid?0.13:0.145,0,h*0.78+0.13,0));
-  const R=p.role;
+  const R=p.role,base=g.children.length;
   if(R==='aguila'){
     // balloon eagle from the reference: yellow feet, green body, brown wings, white head, yellow mask
     [-1,1].forEach(s=>{chain(g,'#f2c919',[s*0.18,0.15,0],[s*0.2,0.65,0],4,0.11);
@@ -950,7 +956,7 @@ function makePerson(p){
   }else if(R==='letra'){
     const b=letterBoard(p.letter||'?');b.position.set(0,p.kid?1.05:1.3,0.3);g.add(b);
   }else if(R==='escudo'){
-    const s=new THREE.Mesh(new THREE.PlaneGeometry(0.75,0.88),new THREE.MeshStandardMaterial({map:shieldTex,transparent:true,side:THREE.DoubleSide}));
+    const s=new THREE.Mesh(new THREE.PlaneGeometry(0.68,0.88),new THREE.MeshStandardMaterial({map:ESCUDO_TEX,transparent:true,alphaTest:0.1,side:THREE.DoubleSide}));
     s.position.set(0,p.kid?1.15:1.35,0.3);s.castShadow=true;g.add(s);
   }else if(R==='muneco'){
     // balloon doll from the reference: white face, gold crown, green body with black and gold bands
@@ -974,9 +980,10 @@ function makePerson(p){
   }else if(R==='dragon'){
     g.add(stick('#8b5a2b',2.4,0,0.6,0.3,0.03));
   }
+  if(R!=='aguila')for(let i=base;i<g.children.length;i++)g.children[i].userData.prop=true;
   const lab=labelSprite(label3d(p),ROLE[p.role].c,p.kid?0.85:1);
   lab.position.set(0,R==='muneco'?4.4:R==='aguila'?2.85:h+0.45,0);lab.name='code';
-  lab.visible=$('i-codes').checked;g.add(lab);
+  lab.visible=LAYERS.codes;g.add(lab);
   g.traverse(o=>{if(o.isMesh)o.castShadow=true;});
   return g;
 }
@@ -999,7 +1006,7 @@ const bannerTex=()=>canvasTex(1024,256,(x)=>{
   x.fillStyle='#ffffff';x.fillRect(0,0,1024,256);x.fillStyle='#7a4fa0';x.fillRect(0,0,1024,26);x.fillRect(0,230,1024,26);
   x.fillStyle='#c4232b';x.font='800 92px "Bricolage Grotesque", sans-serif';x.textAlign='center';x.textBaseline='middle';
   x.fillText('PROMOCIÓN',512,100);x.fillStyle='#2f5d8a';x.font='700 56px "Atkinson Hyperlegible", sans-serif';x.fillText('Colegio María Alvarado',512,178);});
-const banner=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshStandardMaterial({map:bannerTex(),side:THREE.DoubleSide,roughness:.8}));
+const banner=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshStandardMaterial({map:new THREE.TextureLoader().load(BANNER_SRC),side:THREE.DoubleSide,roughness:.8}));
 banner.castShadow=true;scene.add(banner);
 
 /* ---------- school elements (placed from the photo) ---------- */
@@ -1024,7 +1031,7 @@ function buildSite(){
   const skirt=new THREE.Mesh(new THREE.PlaneGeometry(8,0.8),new THREE.MeshStandardMaterial({map:canvasTex(1024,102,(x,w,h)=>{x.fillStyle='#1d2f6b';x.fillRect(0,0,w,h);x.fillStyle='#ffffff';x.font='800 60px "Bricolage Grotesque", sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('COLEGIO MARÍA ALVARADO',w/2,h/2+3);})}));
   skirt.position.set(0,0.42,2.01);st.add(skirt);
   [[-4,-2],[4,-2],[-4,2],[4,2]].forEach(([x,z])=>st.add(stick('#2552b8',3.9,x,0,z,0.06)));
-  st.add(box('#2552b8',8.4,0.18,4.4,0,3.95,0),box('#2552b8',8.4,0.5,0.05,0,3.65,2.2));
+  {const r1=box('#2552b8',8.4,0.18,4.4,0,3.95,0),r2=box('#2552b8',8.4,0.5,0.05,0,3.65,2.2);r1.userData.roof=r2.userData.roof=true;st.add(r1,r2);}
   const back=new THREE.Mesh(new THREE.PlaneGeometry(7.4,2.6),new THREE.MeshStandardMaterial({map:canvasTex(740,260,(x,w,h)=>{x.fillStyle='#f7f5ef';x.fillRect(0,0,w,h);x.fillStyle='#1d2f6b';x.font='800 92px "Bricolage Grotesque", sans-serif';x.textAlign='center';x.fillText('OLIMPIADAS',w/2,120);x.font='700 40px "Atkinson Hyperlegible", sans-serif';x.fillStyle='#c4232b';x.fillText('María Alvarado',w/2,190);})}));
   back.position.set(0,2.25,-1.9);st.add(back);
   [-3.5,3.5].forEach(x=>st.add(box('#111111',0.5,0.8,0.5,x,1.3,1.5)));
@@ -1044,7 +1051,7 @@ function buildSite(){
     const gs=new THREE.Group(),h=len/2;
     for(let i=0;i<4;i++)gs.add(box('#9aa1a6',1.1,0.45*(i+1),len,1.65-i*1.1,0.225*(i+1),0));
     [[-2.2,-h+0.6],[-2.2,h-0.6],[2.4,-h+0.6],[2.4,h-0.6]].forEach(([x,z])=>gs.add(stick('#555',3.8,x,0,z,0.06)));
-    const roof=box('#c98b7a',6,0.12,len+1,0.1,3.9,0);roof.rotation.z=0.12;gs.add(roof);
+    const roof=box('#c98b7a',6,0.12,len+1,0.1,3.9,0);roof.rotation.z=0.12;roof.userData.roof=true;gs.add(roof);
     const n=Math.round(len*1.5);
     for(let i=0;i<n;i++){const tier=i%4,z=-h+0.8+((i*37)%Math.round((len-1.6)*10))/10;gs.add(mesh(G.body,['#e86fa5','#3a7bd5','#9aa1a6','#e8b630'][i%4],0.9,0.75,0.9,1.65-tier*1.1,0.45*(tier+1)+0.38,z),ball('#c99069',0.13,1.65-tier*1.1,0.45*(tier+1)+0.88,z));}
     const gl=labelSprite(label,'#5b6862',1.8);gl.position.set(0,5,0);gs.add(gl);
@@ -1054,7 +1061,7 @@ function buildSite(){
   const front=placed(new THREE.Group(),SITE.front);const fs=makeStand(14,'GRADERÍA FRENTE AL ESCENARIO');fs.rotation.y=Math.PI/2;front.add(fs);siteGroup.add(front);
   // covered corridor on the east side
   const co=placed(new THREE.Group(),SITE.corridor);
-  co.add(box('#9db7b5',2.5,0.1,16,0,3.3,0));
+  {const r=box('#9db7b5',2.5,0.1,16,0,3.3,0);r.userData.roof=true;co.add(r);}
   for(let z=-8;z<=8;z+=4)co.add(stick('#666',3.3,-1.2,0,z,0.05));
   siteGroup.add(co);
   siteGroup.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
@@ -1102,6 +1109,7 @@ function rebuild(){
   peopleGroup=new THREE.Group();
   PL.P.forEach(p=>{p.obj=makePerson(p);peopleGroup.add(p.obj);});
   scene.add(peopleGroup);
+  if(typeof applyLayers==='function')applyLayers();
   $('time').max=PL.tEnd.toFixed(1);
   T=Math.min(T,PL.tEnd);
   const ctr=W(fromWall(0,12));sun.target.position.set(ctr.x,0,ctr.z);sun.position.set(ctr.x-30,60,ctr.z+25);
@@ -1130,7 +1138,7 @@ function update(t){
     if(q.state===3)arrived++;if(q.state>=1)started++;
   });
   const dc=PL.P.filter(p=>p.role==='dragon');
-  dragon.visible=dc.length===3;
+  dragon.visible=dc.length===3&&LAYERS.props;
   if(dc.length===3){
     const top=p=>new THREE.Vector3(p.q.x+p.q.fx*0.3,3.0,p.q.z+p.q.fz*0.3);
     const a=top(dc[0]),b=top(dc[1]),c=top(dc[2]);
@@ -1142,12 +1150,13 @@ function update(t){
     dHead.rotation.y=Math.atan2(fw.x,fw.z);
   }
   const pc=PL.P.filter(p=>p.role==='pancarta');
-  banner.visible=pc.length>=2;
+  banner.visible=pc.length>=2&&LAYERS.props;
   if(pc.length>=2){const a=pc[0].q,b=pc[pc.length-1].q,len=Math.hypot(b.x-a.x,b.z-a.z)+0.4;
-    banner.position.set((a.x+b.x)/2+((a.fx+b.fx)/2)*0.25,1.45,(a.z+b.z)/2+((a.fz+b.fz)/2)*0.25);
-    banner.scale.set(len,1,1);banner.rotation.y=Math.atan2(a.fx,a.fz);}
-  {const n=stageOf(t);$('st-1').setAttribute('aria-pressed',String(n===1));$('st-2').setAttribute('aria-pressed',String(n===2));}
-  if(!drawMode)$('phase').textContent=(stageOf(t)===1?'1 · ':'2 · ')+(arrived===PL.P.length?'Barra lista · ¡a cantar!':arrived>0?`Formando barra · ${arrived}/${PL.P.length}`:started===0?'Ingreso':`Desfile · ${started}/${PL.P.length} en ruta`);
+    const bh=len/BANNER_RATIO;
+    banner.position.set((a.x+b.x)/2+((a.fx+b.fx)/2)*0.25,0.3+bh/2,(a.z+b.z)/2+((a.fz+b.fz)/2)*0.25);
+    banner.scale.set(len,bh,1);banner.rotation.y=Math.atan2(a.fx,a.fz);}
+  {const atI=!playing&&Math.abs(t-PL.tInit)<0.05,atF=!playing&&t>=PL.tEnd-0.05;$('st-1').setAttribute('aria-pressed',String(atI));$('st-2').setAttribute('aria-pressed',String(atF));}
+  if(!drawMode)$('phase').textContent=(!playing&&Math.abs(t-PL.tInit)<0.05?'Inicio · columna del desfile':(arrived===PL.P.length?'Barra lista · ¡a cantar!':arrived>0?`Formando barra · ${arrived}/${PL.P.length}`:started===0?'Ingreso':`Desfile · ${started}/${PL.P.length} en ruta`));
   $('tlabel').textContent=fmtT(t);
   if(view==='follow'){const h=PL.P.reduce((m,p)=>p.lon<m.lon?p:m).q;
     controls.target.lerp(new THREE.Vector3(h.x,1,h.z),0.08);camera.position.lerp(new THREE.Vector3(h.x-h.fx*16+6,13,h.z-h.fz*16+6),0.05);}
@@ -1171,25 +1180,33 @@ let stageEnd=null;
 const stageOf=t=>t<PL.tStage2?1:2;
 function routeState(){
   const none=!ROUTE;$('needroute').hidden=!none||!!drawMode;
-  ['play','st-1','st-2','time'].forEach(id=>{$(id).disabled=none;});
+  ['play','st-1','time'].forEach(id=>{$(id).disabled=none;});
   if(none){setPlaying(false);T=PL.tEnd;$('time').value=T;}
 }
-function playStage(n){const s=n===1?0:PL.tStage2;T=s;stageEnd=n===1?PL.tStage2:PL.tEnd;$('time').value=T;update(T);
-  if(n===1&&view==='jurado')setView('3d');if(n===2&&view==='follow')setView('jurado');setPlaying(true);}
+// three moments: the parade column formed (still), the transition (animated) and the barra (still)
+function showMoment(n){setPlaying(false);stageEnd=null;T=n===1?PL.tInit:PL.tEnd;$('time').value=T;update(T);
+  if(n===1&&(view==='jurado'||view==='follow'))setView('3d');if(n===2&&view==='follow')setView('jurado');}
+function playStage(n){showMoment(n);}
 $('st-1').addEventListener('click',()=>playStage(1));
 $('st-2').addEventListener('click',()=>playStage(2));
-function setPlaying(v){playing=v;$('play').setAttribute('aria-pressed',String(v));$('play').textContent=v?'❚❚ Pausa':'▶ Reproducir';}
-$('play').addEventListener('click',()=>{if(!playing&&T>=PL.tEnd)T=0;stageEnd=null;setPlaying(!playing);});
+function setPlaying(v){playing=v;$('play').setAttribute('aria-pressed',String(v));$('play').textContent=v?'❚❚ Pausa':'▶ Transición';}
+$('play').addEventListener('click',()=>{if(!playing&&(T>=PL.tEnd-0.05||T<PL.tInit))T=PL.tInit;stageEnd=PL.tEnd;if(view==='follow')setView('3d');setPlaying(!playing);});
 $('time').addEventListener('input',e=>{T=parseFloat(e.target.value);setPlaying(false);update(T);});
 ['i-pct','i-bat','i-len','i-face','i-mode','i-slot'].forEach(id=>$(id).addEventListener('change',rebuild));
-$('i-codes').addEventListener('change',e=>PL.P.forEach(p=>{const l=p.obj.getObjectByName('code');if(l)l.visible=e.target.checked;}));
+// layers: names, carried items and roofs can be hidden to see the formation clearly
+const LAYERS=Object.assign({codes:true,props:true,roofs:true},ST.layers||{});
+function applyLayers(){
+  scene.traverse(o=>{if(o.isSprite)o.visible=LAYERS.codes;if(o.userData.prop)o.visible=LAYERS.props;if(o.userData.roof)o.visible=LAYERS.roofs;});
+  [['codes','ly-codes'],['props','ly-props'],['roofs','ly-roofs']].forEach(([k,id])=>$(id).setAttribute('aria-pressed',String(LAYERS[k])));
+}
+[['codes','ly-codes'],['props','ly-props'],['roofs','ly-roofs']].forEach(([k,id])=>$(id).addEventListener('click',()=>{LAYERS[k]=!LAYERS[k];ST.layers=LAYERS;saveState();applyLayers();}));
 $('f-filter').addEventListener('input',()=>renderTable(PL));
 function overMsg(){const n=Object.keys(ST.over).length;$('over-msg').textContent=n?`${n} asignación${n>1?'es':''} manual${n>1?'es':''}`:'';}
 $('tbody').addEventListener('change',e=>{const s=e.target.closest('select[data-k]');if(!s)return;
   if(s.value)ST.over[s.dataset.k]=s.value;else delete ST.over[s.dataset.k];saveState();overMsg();rebuild();});
 $('over-clear').addEventListener('click',()=>{ST.over={};saveState();overMsg();rebuild();});
 // remember every control
-const INPUTS=['i-pct','i-bat','i-len','i-face','i-mode','i-slot','i-codes','speed'];
+const INPUTS=['i-pct','i-bat','i-len','i-face','i-mode','i-slot','speed'];
 INPUTS.forEach(id=>{const el=$(id),v=ST.inputs[id];if(v!==undefined){if(el.type==='checkbox')el.checked=v;else el.value=v;}
   el.addEventListener('change',()=>{ST.inputs[id]=el.type==='checkbox'?el.checked:el.value;saveState();});});
 
@@ -1234,7 +1251,7 @@ $('d-reset').addEventListener('click',()=>{cancelDraw();delete ST.route;delete S
 // keep the moment and the camera too
 const HELP_CTX={
   general:'',
-  visor:'Con 1 dedo giras la cámara; con 2 dedos haces zoom y mueves el plano. En el 3D cada persona lleva su código encima; si un papá o una mamá tiene rol, el código lleva «pa» o «ma». La línea roja gruesa es la línea de barra y la delgada, la ruta.',
+  visor:'Capas: los botones Nombres, Materiales y Techos muestran u ocultan esas partes para ver mejor la formación. Con 1 dedo giras la cámara; con 2 dedos haces zoom y mueves el plano. En el 3D cada persona lleva su código encima; si un papá o una mamá tiene rol, el código lleva «pa» o «ma». La línea roja gruesa es la línea de barra y la delgada, la ruta.',
   desfile:'Cada tramo es un pedazo de la columna. La cabeza va a la derecha del tramo 1 y los metros se cuentan desde la cabeza. Cada figura es una persona; debajo va su código.',
   barra:'Se ve como la ve el jurado: el jurado está abajo y la columna crece hacia arriba. Los rectángulos rosado y azul son Prekinder y Nursery.',
   tabla:'👨 papá, 👩 mamá, 🧒 hijo o hija. En Rol, «Auto» deja que el sistema reparta; si eliges un rol queda fijo para esa persona. Desfile: F12 Iz = fila 12 contada desde la cabeza, lado izquierdo de la marcha. Barra: F3 De = fila 3 de nuestra columna, lado derecho visto desde el jurado; L1 = fila de letras; Del = delante de la línea; Bat = batucada; Atr = al fondo; Ce = centro.'
@@ -1247,8 +1264,8 @@ $('open-config').addEventListener('click',toggleConfig);
 $('open-config2').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggleConfig();});
 $('config-close').addEventListener('click',()=>{cpanel.hidden=true;});
 function showViewer(){const d=$('s-visor');d.open=true;d.scrollIntoView({block:'start'});}
-$('go-desfile').addEventListener('click',()=>{showViewer();T=0;$('time').value=0;setView('follow');setPlaying(true);});
-$('go-barra').addEventListener('click',()=>{showViewer();setPlaying(false);T=PL.tEnd;$('time').value=T;update(T);setView('jurado');});
+$('go-desfile').addEventListener('click',()=>{showViewer();if(ROUTE)showMoment(1);});
+$('go-barra').addEventListener('click',()=>{showViewer();showMoment(2);setView('jurado');});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-help]');if(!b)return;e.preventDefault();e.stopPropagation();openHelp(b.dataset.help);},true);
 $('legend-close').addEventListener('click',()=>{panel.hidden=true;});
 addEventListener('keydown',e=>{
@@ -1294,7 +1311,7 @@ $('fam-list').value=store.get('desfile-familias-v3')||sampleFamilies();
 {const d=store.get('desfile-familias-borrador');if(d&&d!==$('fam-list').value){$('fam-list').value=d;$('fam-msg').textContent='Recuperé cambios sin aplicar de la lista. Pulsa "Aplicar lista" para usarlos.';}}
 $('fam-list').addEventListener('input',e=>store.set('desfile-familias-borrador',e.target.value));
 FAMS=parseFamilies(store.get('desfile-familias-v3')||sampleFamilies());
-T=typeof ST.T==='number'?ST.T:60;if(ST.view)view=ST.view;
+T=typeof ST.T==='number'?ST.T:1e9;if(ST.view)view=ST.view;
 $('need-draw').addEventListener('click',()=>startDraw('route'));
 overMsg();
 rebuild();resize();

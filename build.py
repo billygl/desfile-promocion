@@ -10,6 +10,8 @@ import sys
 root = pathlib.Path(__file__).parent
 img = base64.b64encode((root / "mapa.jpg").read_bytes()).decode()
 html = (root / "src" / "desfile.html").read_text(encoding="utf-8")
+for ph, f, mime in [("__BANNER__", "banner.jpg", "image/jpeg"), ("__ESCUDO__", "escudo.png", "image/png")]:
+    html = html.replace(ph, f"data:{mime};base64," + base64.b64encode((root / f).read_bytes()).decode())
 (root / "index.html").write_text(html.replace("__MAP__", "data:image/jpeg;base64," + img), encoding="utf-8")
 print("index.html built")
 
