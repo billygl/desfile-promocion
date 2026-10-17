@@ -535,7 +535,7 @@ function plan(c,fams){
     if(gi===Math.floor(GRADES.length/2)&&gi>0&&drs.length){sections.push({name:'Dragón',lon});drs.forEach((p,j)=>put(p,0,lon+j*2.4));lon+=(drs.length-1)*2.4+1.6;}
     const gr=rows.filter(r=>r.g===g);
     sections.push({name:`${g} · ${gr.length} filas`,lon});
-    by('miss').filter(m=>m.grade===g).forEach((m,j)=>put(m,j%2?3.4:-3.4,lon+(gi===0?1.2:0)));
+    by('miss').filter(m=>m.grade===g).forEach((m,j)=>put(m,j%2?3.4:-3.4,lon+(gi===0?2.4:0)));
     gr.forEach(row=>{row.set=put;placeRow(row,lon,{outer:2.25,inner:1.35,kid:0.45});lon+=ROW;});
     lon+=0.6;
   });
@@ -702,19 +702,21 @@ function dot(x,y,p,r,showCode){
 }
 function drawParade(pl){
   // head of the parade on the right of the first band; each band is the next stretch of the column
-  const cw=$('svg-parade').parentElement.clientWidth||1120,W0=Math.max(300,Math.min(1120,cw)),k=W0<700?26:36,pad=W0<700?18:34,bandLen=Math.floor((W0-pad*2)/k),bands=Math.ceil((pl.maxLon+0.6)/bandLen),bh=7.8*k+44;
+  const cw=$('svg-parade').parentElement.clientWidth||1120,W0=Math.max(300,Math.min(1120,cw)),k=W0<700?26:36,pad=W0<700?18:34,bandLen=Math.floor((W0-pad*2)/k),bands=Math.ceil((pl.maxLon+0.6)/bandLen),bh=7.8*k+68;
   const h=bands*bh+8;let g='';
   for(let bi=0;bi<bands;bi++){
-    const L0=bi*bandLen,L1=L0+bandLen,top=bi*bh,cy=top+34+3.7*k;
+    const L0=bi*bandLen,L1=L0+bandLen,top=bi*bh,cy=top+60+3.7*k;
     const inB=lon=>lon>=L0-0.01&&lon<L1-0.01;
     const X=lon=>pad+(L1-lon)*k, Y=lat=>cy+lat*k;
     g+=`<rect x="2" y="${top+22}" width="${W0-4}" height="${bh-26}" rx="10" fill="currentColor" fill-opacity=".035"/>`;
-    g+=`<text x="12" y="${top+16}" font-size="12" font-weight="600" fill="currentColor">Tramo ${bi+1} · ${L0}–${Math.min(L1,Math.ceil(pl.maxLon))} m desde la cabeza</text>`;
+    const nar=W0<700,head=`Tramo ${bi+1} · ${L0}–${Math.min(L1,Math.ceil(pl.maxLon))} m${nar?'':' desde la cabeza'}`;
+    g+=`<text x="${pad}" y="${top+16}" font-size="12" font-weight="600" fill="currentColor">${head}</text>`;
     // faint chevrons across the band + a solid arrow: everyone walks and looks to the right
     for(let x=pad+40;x<W0-40;x+=Math.max(120,(W0-80)/5))g+=`<path d="M${x} ${cy-3.4*k} l${k*0.9} ${3.4*k} l${-k*0.9} ${3.4*k}" fill="none" stroke="currentColor" stroke-opacity=".07" stroke-width="${k*0.45}" stroke-linejoin="round"/>`;
-    g+=`<g fill="var(--accent)"><rect x="${W0-118}" y="${top+9}" width="78" height="4" rx="2"/><path d="M${W0-42} ${top+3} l14 8 l-14 8 z"/></g><text x="${W0-124}" y="${top+16}" font-size="11" text-anchor="end" fill="var(--accent)" font-weight="700">miran y avanzan</text>`;
+    // arrow on the right of the header, sized to the room left by the band title
+    {const al=nar?34:78,x1=W0-pad-14,x0=x1-al;g+=`<g fill="var(--accent)"><rect x="${x0}" y="${top+9}" width="${al}" height="4" rx="2"/><path d="M${x1} ${top+3} l14 8 l-14 8 z"/></g><text x="${x0-6}" y="${top+16}" font-size="11" text-anchor="end" fill="var(--accent)" font-weight="700">${nar?'avanzan':'miran y avanzan'}</text>`;}
     for(let m=Math.ceil(L0/5)*5;m<L1&&m<=pl.maxLon+0.5;m+=5)g+=`<line x1="${X(m)}" x2="${X(m)}" y1="${top+26}" y2="${top+bh-8}" stroke="currentColor" stroke-opacity=".1"/><text x="${X(m)}" y="${top+bh-10}" font-size="10" text-anchor="middle">${m} m</text>`;
-    pl.sections.filter(s=>inB(s.lon)).forEach((s,i)=>g+=`<text x="${X(s.lon)}" y="${top+38+(i%2)*13}" font-size="11" font-weight="600" text-anchor="middle" fill="currentColor">${esc(s.name)}</text>`);
+    pl.sections.filter(s=>inB(s.lon)).forEach((s,i)=>g+=`<text x="${X(s.lon)}" y="${top+36+(i%2)*13}" font-size="11" font-weight="600" text-anchor="middle" fill="currentColor">${esc(s.name)}</text>`);
     const dr=pl.P.filter(p=>p.role==='dragon'&&inB(p.lon));
     if(dr.length>1)g+=`<polyline points="${dr.map(p=>X(p.lon)+','+Y(p.lat)).join(' ')}" stroke="${ROLE.dragon.c}" stroke-width="14" stroke-linecap="round" fill="none" opacity=".35"/>`;
     const pa=pl.P.filter(p=>p.role==='pancarta'&&inB(p.lon));
