@@ -92,7 +92,8 @@ tr.fam-start td{border-top:2px solid var(--line)}
     <label for="i-pct">Asistencia estimada %<input id="i-pct" type="number" min="30" max="100" value="80"></label>
     <label for="i-bat">Batucada (personas)<input id="i-bat" type="number" min="0" max="12" value="6"></label>
     <label for="i-len">Largo línea de barra (m)<input id="i-len" type="number" min="8" max="40" step="0.5" value="14"></label>
-    <label for="i-mode">Barra<select id="i-mode"><option value="grados">Por grados: columnas lado a lado</option><option value="filas">Filas horizontales</option></select></label>
+    <label for="i-mode">Barra<select id="i-mode"><option value="columna">Columna junto a Prekinder y Nursery</option><option value="filas">Filas horizontales (toda la línea)</option></select></label>
+    <label for="i-slot">Nuestra columna<select id="i-slot"><option value="centro">Al centro</option><option value="izq">Izquierda (vista del jurado)</option><option value="der">Derecha (vista del jurado)</option></select></label>
     <label for="i-face">Frente de la barra<select id="i-face"><option value="jurado">Hacia el jurado (escenario)</option><option value="sur">Hacia el sur</option></select></label>
     <label class="chk" for="i-codes"><input id="i-codes" type="checkbox" checked> Mostrar códigos en 3D</label>
   </section>
@@ -169,13 +170,13 @@ const IMG_W=946, IMG_H=830, CX=473, CY=415;
 // Red route traced from the school plan (pixels): starts at the corridor, ends at the patio
 const ROUTE_PX=[[446,325],[445,278],[470,251],[500,220],[527,193],[513,179],[488,166],[466,148],[448,135],[427,134],[410,151],[397,165],[390,180]];
 const ROAD_DEG=-8.5;              // heading of Av. 28 de Julio in the plan image
-const BAR_C=[440,183], BAR_PX=46; // barra center and the length (px) the user drew
-const SITE={court:[445,172],stage:[447,104],stands:[372,214],corridor:[502,190]};
+const BAR_C=[440,152], BAR_PX=46; // barra center and the length (px) the user drew
+const SITE={court:[445,172],stage:[447,104],stands:[372,190],front:[425,262],corridor:[502,190]};
 const V=1.0; // m/s walking pace
 const WORDS=['LOVE','HONOR','SERVICE'];
 const ROLE={
-  padre:{c:'#2f5d8a',n:'Papá / mamá'},
-  nino:{c:'#e8b630',n:'Niño / niña'},
+  padre:{c:'#1b5e34',n:'Papá / mamá'},
+  nino:{c:'#7cc88a',n:'Niño / niña'},
   aguila:{c:'#8a5a2b',n:'Águila'},
   direccion:{c:'#0f766e',n:'Dirige coreografía y canto'},
   antorcha:{c:'#e5532d',n:'Antorcha'},
@@ -183,7 +184,7 @@ const ROLE={
   escudo:{c:'#1f3f8f',n:'Escudo'},
   letra:{c:'#d94f8a',n:'Letra (LOVE HONOR SERVICE)'},
   bat:{c:'#c23b5a',n:'Batucada'},
-  dragon:{c:'#2f9e5b',n:'Dragón 5 m (3 cargan)'},
+  dragon:{c:'#c9a227',n:'Dragón 5 m (3 cargan)'},
   muneco:{c:'#b5179e',n:'Muñeco'},
   pompon:{c:'#18a5b5',n:'Pompón supremo'},
   baston:{c:'#f08a24',n:'Bastón'}
@@ -283,7 +284,7 @@ const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},se
 
 function cfg(){
   const n=(id,d)=>{const v=parseFloat($(id).value);return isFinite(v)?v:d};
-  return {pct:Math.min(100,Math.max(30,n('i-pct',80))),bat:Math.max(0,Math.round(n('i-bat',6))),mode:$('i-mode').value,len:n('i-len',14),face:$('i-face').value};
+  return {pct:Math.min(100,Math.max(30,n('i-pct',80))),bat:Math.max(0,Math.round(n('i-bat',6))),mode:$('i-mode').value,slot:$('i-slot').value,len:n('i-len',14),face:$('i-face').value};
 }
 
 /* ---------- path ---------- */
@@ -446,18 +447,37 @@ function plan(c,fams){
     return rs;
   }
   let kRowsB=[],pRowsB=[],blocks=[];
-  if(c.mode==='grados'){
-    const G=GRADES.length,bs=Lb/G,dp0=dp+0.3;let maxDp=dp0;
-    GRADES.forEach((g,gi)=>{
-      const cAl=mid+((G-1)/2-gi)*bs; // first grade on the jury's left
-      const gr=rows.filter(r=>r.g===g);
-      gr.forEach((row,r)=>{const d=dp0+r*0.85;maxDp=Math.max(maxDp,d);
-        row.set=(p,lat,dd)=>{p.b=at(cAl-lat,dd,g+'·'+(r+1));p.b.blk=g;p.b.r=r+1;};
-        placeRow(row,d,{outer:1.45,inner:0.9,kid:0.3});});
-      blocks.push({g,al:cAl,rows:gr.length});
-    });
-    drs.forEach((p,j)=>p.b=at(mid+(j-(drs.length-1)/2)*2.4,maxDp+1.0,'F'));
-    P.filter(p=>!p.b).forEach((p,i)=>p.b=at(mid+(i-0.5)*0.7,maxDp+1.8,'F'));
+  if(c.mode==='columna'){
+    // the line is shared by the 3 promotions; ours is one column, the others stand beside it
+    const bs=Lb/3,order=c.slot==='izq'?[0,1,2]:c.slot==='der'?[1,2,0]:[1,0,2];
+    const PROMOS=[{g:'Kinder (nosotros)',c:'#2aa84a'},{g:'Prekinder',c:'#e86fa5'},{g:'Nursery',c:'#3a7bd5'}];
+    const alOf=i=>mid+(1-i)*bs; // column 0 is on the jury's left
+    const cAl=alOf(order[0]);
+    const put2=(p,lat,dd,row,extra)=>{p.b=at(cAl-lat,dd,row);Object.assign(p.b,extra||{});};
+    by('escudo').forEach(p=>put2(p,0,-3.0,'D'));
+    by('pancarta').forEach((p,i,a)=>put2(p,(i-(a.length-1)/2)*1.4,-2.0,'D'));
+    by('aguila').forEach(p=>put2(p,2.2,-2.1,'D'));
+    by('antorcha').forEach(p=>put2(p,-2.2,-2.1,'D'));
+    by('direccion').forEach((p,i)=>{put2(p,i%2?1.9:-1.9,-0.9,'D');p.faceGroup=true;});
+    // letters: one word per row, readable from the jury
+    let lq2=[...letters],d=0.4;
+    WORDS.forEach((w,wi)=>{const gap=w.length>5?0.62:0.75;
+      for(let j=0;j<w.length;j++){const p=lq2.shift();if(p)put2(p,(j-(w.length-1)/2)*gap,d,'L'+(wi+1),{blk:'L',r:wi+1});}
+      d+=0.7;});
+    const dp0=d+0.3;let maxDp=dp0;
+    // 3 families per row: parents on each side of their kid
+    const us=[...units].sort((x,y)=>GRADES.indexOf(x.g)-GRADES.indexOf(y.g));
+    let nRows=0;
+    for(let i=0;i<us.length;i+=3,nRows++){const dd=dp0+nRows*0.75;maxDp=dd;
+      us.slice(i,i+3).forEach((u,j,arr)=>{const cx=(j-(arr.length-1)/2)*1.55,tag={blk:'col',r:nRows+1};
+        u.kids.forEach((k,m)=>put2(k,cx+(m-(u.kids.length-1)/2)*0.4,dd,'R'+(nRows+1),tag));
+        const sp=u.kids.length>1?0.65:0.5;
+        u.par.forEach((p2,m)=>put2(p2,cx+(u.par.length===1?-sp:(m?sp:-sp)),dd,'R'+(nRows+1),tag));});}
+    by('bat').forEach((p,i)=>put2(p,((i%3)-1)*1.3,maxDp+1.0+Math.floor(i/3)*0.9,'B'));
+    const back=maxDp+1.0+Math.ceil(by('bat').length/3)*0.9+0.3;
+    drs.forEach((p,j)=>put2(p,(j-(drs.length-1)/2)*2.2,back,'F'));
+    P.filter(p=>!p.b).forEach((p,i)=>put2(p,(i-0.5)*0.7,back+0.8,'F'));
+    PROMOS.forEach((pr,i)=>blocks.push({...pr,al:alOf(order[i]),rows:nRows,ours:i===0,width:bs,depth:back+0.6}));
   }else{
   const kidList=P.filter(p=>p.kid&&!p.b).sort((a,b)=>a.lon-b.lon||a.lat-b.lat);
   const kGap=0.55;kRowsB=rowsOf(kidList.length,kGap,Math.max(4,Math.floor(Lb/kGap)+1));
@@ -486,7 +506,7 @@ function plan(c,fams){
 
   P.forEach(p=>{const e=pathAt(PATH.L),d=pathDir(PATH.L);p.e={x:e.x-d.z*p.lat,z:e.z+d.x*p.lat};p.D=Math.hypot(p.b.x-p.e.x,p.b.z-p.e.z);});
   const tEnd=Math.max(...P.map(p=>(p.lon+PATH.L+p.D)/V))+2;
-  return {P,att,fams,kids:P.filter(p=>p.kid).length,parents:P.filter(p=>!p.kid).length,rows:rows.length,maxLon,sections,Lb,nb,mid,kRowsB,pRowsB,blocks,GRADES,mode:c.mode,letterRow:letters.length>0,tEnd,A,B,ctr};
+  return {P,att,fams,kids:P.filter(p=>p.kid).length,parents:P.filter(p=>!p.kid).length,rows:rows.length,maxLon,sections,Lb,nb,mid,kRowsB,pRowsB,blocks,GRADES,mode:c.mode,letterRow:letters.length>0,tEnd,A,B,ctr,at};
 }
 
 /* ---------- stats, diagrams, table ---------- */
@@ -495,7 +515,7 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 function renderInfo(pl){
   const stat=(v,l)=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`;
   const nRowsB=(pl.letterRow?1:0)+pl.kRowsB.length+pl.pRowsB.length;
-  const gradeTile=pl.mode==='grados'?stat(pl.blocks.length+' × '+Math.max(...pl.blocks.map(b=>b.rows)),'barra: columnas por grado × filas'):stat(nRowsB+' filas','barra, + escudo y pancarta delante');
+  const gradeTile=pl.mode==='columna'?stat('1 × '+pl.blocks[0].rows+' filas',`barra: columna de ${(pl.Lb/3).toFixed(1)} m × ${pl.blocks[0].depth.toFixed(0)} m de fondo`):stat(nRowsB+' filas','barra, + escudo y pancarta delante');
   const pct=Math.round(100*pl.att.length/pl.fams.length),est=pl.fams.some(f=>f.est);
   $('stats').innerHTML=
     stat(pl.P.length,'personas')+stat(pl.att.length+' / '+pl.fams.length,'familias asisten ('+pct+'%'+(est?', estimado':'')+')')+stat(pl.kids,'niños')+stat(pl.parents,'padres y madres')+
@@ -507,18 +527,19 @@ function renderInfo(pl){
     `<span>${sh('<circle cx="6" cy="6" r="5" fill="currentColor"/>')}Mamá</span>`+
     `<span>${sh('<rect x="2.5" y="2.5" width="7" height="7" transform="rotate(45 6 6)" fill="currentColor"/>')}Niño / niña</span>`+
     `<span style="color:var(--muted)">· color = rol:</span>`+
-    `<span><i style="background:${ROLE.padre.c}"></i>Papá sin rol</span><span><i style="background:#5b8fc7"></i>Mamá sin rol</span>`+
+    `<span><i style="background:${ROLE.padre.c}"></i>Papá sin rol</span><span><i style="background:#3f9a58"></i>Mamá sin rol</span>`+
     Object.entries(ROLE).filter(([k])=>k!=='padre').map(([k,r])=>`<span><i style="background:${r.c}"></i>${r.n}</span>`).join('');
   $('parade-sum').innerHTML=`Columna de <b>${pl.maxLon.toFixed(1)} m</b> por <b>≈5.4 m</b> de ancho. Cabeza: Águila, antorcha, pancarta, escudo, LOVE / HONOR / SERVICE y batucada. Luego <b>${pl.rows} filas de familias</b> agrupadas por grado (${pl.GRADES.join(', ')}), con el dragón al medio. La ruta mide ≈${PATH.L.toFixed(0)} m y pasa frente al escenario antes de formar la barra.`;
   const kr=pl.kRowsB.map(r=>r.length),pr=pl.pRowsB.map(r=>r.length);
-  if(pl.mode==='grados')$('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela a la Av. 28 de Julio y mirando al jurado. Delante: escudo, pancarta, Águila, antorcha y los 2 que dirigen. Fila 1: <b>LOVE HONOR SERVICE</b>. Detrás, <b>una columna por grado</b> (${pl.blocks.map(b=>b.g+': '+b.rows+' filas').join(', ')}), lado a lado, de ${(pl.Lb/pl.blocks.length).toFixed(1)} m de ancho cada una: el hijo al centro y sus padres a los costados, como en el desfile. El dragón se alza detrás de todos y la batucada va al costado.`;
+  if(pl.mode==='columna')$('barra-sum').innerHTML=`La línea de <b>${pl.Lb.toFixed(1)} m</b> la comparten las 3 promociones: <b>Kinder (nosotros, verde)</b>, Prekinder (rosado) y Nursery (azul), cada una en una columna de ${(pl.Lb/3).toFixed(1)} m mirando al jurado. Nuestra columna: escudo, pancarta, Águila y antorcha delante; los 2 que dirigen en las esquinas; LOVE / HONOR / SERVICE en 3 filas; luego <b>${pl.blocks[0].rows} filas de 3 familias</b> (${pl.GRADES.join(', ')}), cada hijo entre su papá y su mamá; atrás la batucada y el dragón alzado. Prekinder y Nursery se dibujan solo como referencia.`;
+  else if(pl.mode==='grados')$('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela a la Av. 28 de Julio y mirando al jurado. Delante: escudo, pancarta, Águila, antorcha y los 2 que dirigen. Fila 1: <b>LOVE HONOR SERVICE</b>. Detrás, <b>una columna por grado</b> (${pl.blocks.map(b=>b.g+': '+b.rows+' filas').join(', ')}), lado a lado, de ${(pl.Lb/pl.blocks.length).toFixed(1)} m de ancho cada una: el hijo al centro y sus padres a los costados, como en el desfile. El dragón se alza detrás de todos y la batucada va al costado.`;
   else $('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela a la Av. 28 de Julio y mirando al jurado. Delante: escudo, pancarta, Águila y antorcha. Fila 1: <b>LOVE HONOR SERVICE</b>. Luego ${kr.length} filas de niños (${kr.join(' + ')}) y ${pr.length} de padres (${pr.join(' + ')}), en tresbolillo para que todos vean. Batucada al costado este.`;
   drawParade(pl);drawBarra(pl);renderTable(pl);
 }
 const label=p=>p.letter||p.fam;
 const label3d=p=>p.letter?p.letter+' · '+p.fam:p.kid?p.fam:p.fam+(p.g==='papa'?' ♂':' ♀');
 function shape(x,y,p,r){
-  const c=p.role==='padre'&&p.g==='mama'?'#5b8fc7':ROLE[p.role].c,X=x.toFixed(1),Y=y.toFixed(1);
+  const c=p.role==='padre'&&p.g==='mama'?'#3f9a58':ROLE[p.role].c,X=x.toFixed(1),Y=y.toFixed(1);
   if(p.kid){const d=r*1.15;return `<polygon points="${X},${(y-d).toFixed(1)} ${(x+d).toFixed(1)},${Y} ${X},${(y+d).toFixed(1)} ${(x-d).toFixed(1)},${Y}" fill="${c}"/>`;}
   if(p.g==='papa')return `<rect x="${(x-r*0.88).toFixed(1)}" y="${(y-r*0.88).toFixed(1)}" width="${r*1.76}" height="${r*1.76}" rx="1.5" fill="${c}"/>`;
   return `<circle cx="${X}" cy="${Y}" r="${r}" fill="${c}"/>`;
@@ -557,7 +578,8 @@ function drawBarra(pl){
   const pa=pl.P.filter(p=>p.role==='pancarta').map(p=>p.b);
   if(pa.length)g+=`<line x1="${X(Math.min(...pa.map(b=>b.al)))-8}" x2="${X(Math.max(...pa.map(b=>b.al)))+8}" y1="${Y(pa[0].dp)+9}" y2="${Y(pa[0].dp)+9}" stroke="${ROLE.pancarta.c}" stroke-width="4" opacity=".6"/>`;
   pl.P.forEach(p=>g+=dot(X(p.b.al),Y(p.b.dp),p,p.kid?5:6.5,true));
-  (pl.blocks||[]).forEach(b=>g+=`<text x="${X(b.al)}" y="12" font-size="12" font-weight="600" text-anchor="middle" fill="currentColor">${esc(b.g)}</text>`);
+  (pl.blocks||[]).forEach(b=>{g+=`<text x="${X(b.al)}" y="14" font-size="12" font-weight="600" text-anchor="middle" fill="${b.c||'currentColor'}">${esc(b.g)}</text>`;
+    if(b.width&&!b.ours)g+=`<rect x="${X(b.al+b.width/2-0.3)}" y="${Y(b.depth)}" width="${(b.width-0.6)*k}" height="${(b.depth-0.4)*k}" rx="6" fill="${b.c}" opacity=".18"/><text x="${X(b.al)}" y="${Y(b.depth/2)}" font-size="11" text-anchor="middle">referencia</text>`;});
   const s=$('svg-barra');s.setAttribute('viewBox',`0 0 ${w} ${h}`);s.style.color='var(--fg)';s.innerHTML=g;
 }
 function renderTable(pl){
@@ -565,7 +587,7 @@ function renderTable(pl){
   const side=p=>p.lat<-0.1?'izquierda':p.lat>0.1?'derecha':'centro';
   const who=p=>p.kid?(p.f.kids>1?'Hijo/a '+p.idx:'Hijo/a'):GENDER[p.g];
   const rol=p=>p.role==='padre'||p.role==='nino'?'—':p.role==='letra'?`Letra ${p.letter} (${p.word})`:ROLE[p.role].n;
-  const bar=p=>p.b.blk?`Columna ${p.b.blk} · fila ${p.b.r} · ${p.b.al>(pl.blocks.find(b=>b.g===p.b.blk)||{al:0}).al+0.1?'izquierda':p.b.al<(pl.blocks.find(b=>b.g===p.b.blk)||{al:0}).al-0.1?'derecha':'centro'}`:p.b.row==='F'?'Detrás de las columnas':p.b.row==='D'?'Delante de la línea':p.b.row==='C'?'Costado (batucada)':`Fila ${p.b.row} · puesto ${p.bpos}`;
+  const bar=p=>p.b.blk==='col'?`Fila ${p.b.r} de la columna · ${p.b.al>(pl.blocks[0]||{al:0}).al+0.1?'izquierda':p.b.al<(pl.blocks[0]||{al:0}).al-0.1?'derecha':'centro'}`:p.b.blk==='L'?`Letras, fila ${p.b.r}`:p.b.row==='B'?'Batucada, detrás de la columna':p.b.blk?`Columna ${p.b.blk} · fila ${p.b.r} · ${p.b.al>(pl.blocks.find(b=>b.g===p.b.blk)||{al:0}).al+0.1?'izquierda':p.b.al<(pl.blocks.find(b=>b.g===p.b.blk)||{al:0}).al-0.1?'derecha':'centro'}`:p.b.row==='F'?'Detrás de las columnas':p.b.row==='D'?'Delante de la línea':p.b.row==='C'?'Costado (batucada)':`Fila ${p.b.row} · puesto ${p.bpos}`;
   const list=pl.P.filter(p=>!q||p.fam.toUpperCase().includes(q)).sort((a,b)=>a.fam.localeCompare(b.fam)||a.kid-b.kid||a.idx-b.idx);
   let last='';
   $('tbody').innerHTML=list.map(p=>{const st=p.fam!==last?' class="fam-start"':'';const code=p.fam!==last?esc(p.fam)+' <span style="color:var(--muted);font-weight:400">'+[...new Set(p.f.kid.map(k=>k.grade))].join('/')+'</span>':'';last=p.fam;
@@ -640,7 +662,7 @@ const starTex=canvasTex(128,150,(x,w,h)=>{x.beginPath();x.moveTo(10,10);x.lineTo
 function makePerson(p){
   const g=new THREE.Group();
   const h=p.kid?1.25:1.68;
-  const shirt=p.role==='padre'?(p.g==='mama'?'#5b8fc7':ROLE.padre.c):p.role==='nino'?ROLE.nino.c:ROLE[p.role].c;
+  const shirt=p.role==='padre'?(p.g==='mama'?'#3f9a58':ROLE.padre.c):p.role==='nino'?ROLE.nino.c:ROLE[p.role].c;
   if(p.role==='aguila'){}
   else if(p.g==='mama'){
     g.add(mesh(G.dress,shirt,1,h*0.78,1,0,h*0.39,0));
@@ -762,14 +784,19 @@ function buildSite(){
   const jl=labelSprite('JURADO','#1d2f6b',1.6);jl.position.set(0,2.1,0);jr.add(jl);st.add(jr);
   const sl=labelSprite('ESCENARIO','#1d2f6b',1.8);sl.position.set(0,5,0);st.add(sl);
   siteGroup.add(st);
-  // covered stands on the west side, facing the court
-  const gs=placed(new THREE.Group(),SITE.stands);
-  for(let i=0;i<4;i++)gs.add(box('#9aa1a6',1.1,0.45*(i+1),17,1.65-i*1.1,0.225*(i+1),0));
-  [[-2.2,-8.4],[-2.2,8.4],[2.4,-8.4],[2.4,8.4]].forEach(([x,z])=>gs.add(stick('#555',3.8,x,0,z,0.06)));
-  const roof=box('#c98b7a',6,0.12,18,0.1,3.9,0);roof.rotation.z=0.12;gs.add(roof);
-  for(let i=0;i<26;i++){const tier=i%4,z=-7.5+((i*37)%150)/10;const sp=mesh(G.body,['#e8b630','#2f9e5b','#c23b5a','#3a86ff'][i%4],0.9,0.75,0.9,1.65-tier*1.1,0.45*(tier+1)+0.38,z);gs.add(sp,ball('#c99069',0.13,1.65-tier*1.1,0.45*(tier+1)+0.88,z));}
-  const gl=labelSprite('GRADERÍA','#5b6862',1.6);gl.position.set(0,5,0);gs.add(gl);
-  siteGroup.add(gs);
+  // covered stands: one on the west side facing the court, one at the far end facing the stage
+  const makeStand=(len,label)=>{
+    const gs=new THREE.Group(),h=len/2;
+    for(let i=0;i<4;i++)gs.add(box('#9aa1a6',1.1,0.45*(i+1),len,1.65-i*1.1,0.225*(i+1),0));
+    [[-2.2,-h+0.6],[-2.2,h-0.6],[2.4,-h+0.6],[2.4,h-0.6]].forEach(([x,z])=>gs.add(stick('#555',3.8,x,0,z,0.06)));
+    const roof=box('#c98b7a',6,0.12,len+1,0.1,3.9,0);roof.rotation.z=0.12;gs.add(roof);
+    const n=Math.round(len*1.5);
+    for(let i=0;i<n;i++){const tier=i%4,z=-h+0.8+((i*37)%Math.round((len-1.6)*10))/10;gs.add(mesh(G.body,['#e86fa5','#3a7bd5','#9aa1a6','#e8b630'][i%4],0.9,0.75,0.9,1.65-tier*1.1,0.45*(tier+1)+0.38,z),ball('#c99069',0.13,1.65-tier*1.1,0.45*(tier+1)+0.88,z));}
+    const gl=labelSprite(label,'#5b6862',1.8);gl.position.set(0,5,0);gs.add(gl);
+    return gs;
+  };
+  const side=placed(new THREE.Group(),SITE.stands);side.add(makeStand(16,'GRADERÍA LATERAL'));siteGroup.add(side);
+  const front=placed(new THREE.Group(),SITE.front);const fs=makeStand(14,'GRADERÍA FRENTE AL ESCENARIO');fs.rotation.y=Math.PI/2;front.add(fs);siteGroup.add(front);
   // covered corridor on the east side
   const co=placed(new THREE.Group(),SITE.corridor);
   co.add(box('#9db7b5',3.5,0.1,16,0,3.3,0));
@@ -778,7 +805,26 @@ function buildSite(){
   siteGroup.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
 }
 
-let routeObj,barObj,peopleGroup,PL,FAMS;
+let routeObj,barObj,peopleGroup,PL,FAMS,promoGroup;
+// Prekinder and Nursery as reference crowds (instanced, no codes)
+function buildPromos(){
+  if(promoGroup)scene.remove(promoGroup);
+  promoGroup=new THREE.Group();scene.add(promoGroup);
+  if(PL.mode!=='columna')return;
+  const ROT=Math.atan2(-PL.nb.x,-PL.nb.z),dummy=new THREE.Object3D();
+  PL.blocks.forEach(b=>{
+    const front=PL.at(b.al,-1.2);
+    const lab=labelSprite(b.ours?'KINDER':b.g.toUpperCase(),b.c,2.2);lab.position.set(front.x,3.2,front.z);promoGroup.add(lab);
+    if(b.ours)return;
+    const spots=[];
+    for(let d=0.5;d<b.depth;d+=0.85)for(let a=-b.width/2+0.5;a<=b.width/2-0.4;a+=0.62)spots.push(PL.at(b.al+a+((Math.round(d/0.85)%2)?0.31:0),d));
+    const bodies=new THREE.InstancedMesh(G.body,M(b.c),spots.length),heads=new THREE.InstancedMesh(G.ball,M('#c99069'),spots.length);
+    spots.forEach((s,i)=>{const kid=i%3===1,h=kid?1.25:1.68;
+      dummy.position.set(s.x,h*0.39,s.z);dummy.rotation.set(0,ROT,0);dummy.scale.set(kid?0.8:1,h*0.78,kid?0.8:1);dummy.updateMatrix();bodies.setMatrixAt(i,dummy.matrix);
+      dummy.position.set(s.x,h*0.78+0.13,s.z);dummy.scale.setScalar(kid?0.13:0.145);dummy.updateMatrix();heads.setMatrixAt(i,dummy.matrix);});
+    bodies.castShadow=true;promoGroup.add(bodies,heads);
+  });
+}
 function buildStatic(){
   [routeObj,barObj].forEach(o=>o&&scene.remove(o));
   ground.scale.set(IMG_W*S,IMG_H*S,1);
@@ -788,6 +834,7 @@ function buildStatic(){
   barObj=new THREE.Mesh(new THREE.BoxGeometry(PL.Lb,0.06,0.3),new THREE.MeshBasicMaterial({color:0xff2d2d}));
   barObj.position.set(PL.ctr.x,0.05,PL.ctr.z);barObj.rotation.y=SITE_ROT;scene.add(barObj);
   buildSite();
+  buildPromos();
 }
 function rebuild(){
   const c=cfg();S=c.len/BAR_PX;PATH=makePath();
@@ -850,9 +897,9 @@ function setView(v){
   controls.enabled=v!=='follow';
   if(v==='top'){camera.position.set(ctr.x,100,ctr.z+0.01);controls.target.set(ctr.x,0,ctr.z);}
   else if(v==='3d'){const c=W([450,150]);camera.position.set(c.x-NORTH.x*45-EAST.x*25,40,c.z-NORTH.z*45-EAST.z*25);controls.target.set(c.x,0,c.z);}
-  else if(v==='jurado'){const j=W(SITE.stage),m=PL.ctr;
+  else if(v==='jurado'){const j=W(SITE.stage),m=PL.mode==='columna'?PL.at(PL.blocks[0].al,4):PL.ctr;
     const jx=j.x+EAST.x*-2.4-NORTH.x*4.4,jz=j.z+EAST.z*-2.4-NORTH.z*4.4;
-    camera.position.set(jx,2.6,jz);controls.target.set(m.x,1.2,m.z);}
+    camera.position.set(jx,4.2,jz);controls.target.set(m.x,1.2,m.z);}
   else{const h=PL.P[0].q||{x:0,z:0,fx:0,fz:-1};camera.position.set(h.x-h.fx*16+6,13,h.z-h.fz*16+6);controls.target.set(h.x,1,h.z);}
   controls.update();
 }
@@ -860,7 +907,7 @@ function setView(v){
 function setPlaying(v){playing=v;$('play').setAttribute('aria-pressed',String(v));$('play').textContent=v?'❚❚ Pausa':'▶ Reproducir';}
 $('play').addEventListener('click',()=>{if(!playing&&T>=PL.tEnd)T=0;setPlaying(!playing);});
 $('time').addEventListener('input',e=>{T=parseFloat(e.target.value);setPlaying(false);update(T);});
-['i-pct','i-bat','i-len','i-face','i-mode'].forEach(id=>$(id).addEventListener('change',rebuild));
+['i-pct','i-bat','i-len','i-face','i-mode','i-slot'].forEach(id=>$(id).addEventListener('change',rebuild));
 $('i-codes').addEventListener('change',e=>PL.P.forEach(p=>{const l=p.obj.getObjectByName('code');if(l)l.visible=e.target.checked;}));
 $('f-filter').addEventListener('input',()=>renderTable(PL));
 function applyList(text,save){
