@@ -70,7 +70,10 @@ td select.manual{border-color:var(--accent);font-weight:700}
 [hidden]{display:none!important}
 .alist{display:flex;flex-direction:column;gap:4px}
 .alist h4{margin:10px 0 2px;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-.arow{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--line)}
+.arow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--line)}
+.ap .an{font-size:.72rem;margin-left:4px;font-family:var(--f-body)}
+.acode .af{display:block;font-size:.68rem;font-weight:400;color:var(--muted);font-family:var(--f-body)}
+.pn{display:block;font-size:.72rem;color:var(--muted)}
 .arow .acode{font-family:var(--f-mono);font-weight:700;min-width:64px;text-align:left;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
 .arow .acode small{font-weight:400;color:var(--muted)}
 .ap{font-size:1.05rem;padding:3px 7px;border-radius:8px;border:2px dashed var(--line);background:transparent;line-height:1.2}
@@ -304,6 +307,13 @@ tr.fam-start td{border-top:2px solid var(--line)}
     <div class="row"><button class="btn" id="d-export">Exportar ruta</button><span class="note" id="exp-msg"></span></div>
     <textarea id="exp-text" readonly hidden style="min-height:110px" aria-label="Ruta exportada"></textarea>
   </details>
+  <details class="lg" id="names-box">
+    <summary><h3 style="display:inline">Nombres (privado)</h3></summary>
+    <p class="note" style="margin:6px 0">Importa el archivo privado de nombres (.json). Nunca se sube a internet: queda solo en este navegador. Sirve para saber quién es quién en Asistencia, en la tabla por familia y en las tareas.</p>
+    <div class="row"><label class="btn" for="names-file" style="cursor:pointer;padding:6px 10px;border-radius:6px;font-size:.82rem">Importar nombres…</label><input type="file" id="names-file" accept=".json,application/json" hidden><button class="btn" id="names-clear">Borrar nombres</button></div>
+    <label class="chk" for="names-show" style="display:flex;gap:8px;align-items:center;font-size:.88rem"><input type="checkbox" id="names-show" checked> Mostrar nombres</label>
+    <span class="note" id="names-msg"></span>
+  </details>
   <p class="note">Todo se guarda en este navegador. Tecla C abre y cierra este panel.</p>
 </aside>
 <aside id="legend-panel" class="drawer" aria-label="Leyenda" hidden>
@@ -456,6 +466,13 @@ let saveTimer;function saveState(){clearTimeout(saveTimer);saveTimer=setTimeout(
 const DEFAULT_ROUTE=[[615.4,372],[647.7,330.7],[528.8,243.5],[547,195.5],[461.4,131.2],[421.3,176.7]], DEFAULT_BAR=null;
 let ROUTE=ST.route&&ST.route.length>1?ST.route:DEFAULT_ROUTE&&DEFAULT_ROUTE.map(q=>[...q]);
 let BARLINE=ST.bar&&ST.bar.length===2?ST.bar:DEFAULT_BAR&&DEFAULT_BAR.map(q=>[...q]);
+// names come from a private file the viewer imports; never part of the page
+const NAMES_KEY='desfile-nombres';
+let NAMES=(()=>{try{return JSON.parse(localStorage.getItem(NAMES_KEY))||null}catch(e){return null}})();
+const showNames=()=>!!NAMES&&ST.showNames!==false;
+function famName(code){return showNames()&&NAMES[code]?NAMES[code].familia||'':'';}
+function kidName(code,grade,idx){const f=showNames()&&NAMES[code];if(!f)return '';const h=f.hijos||[];const x=h.filter(x=>x.grado===grade)[0]||h[idx-1]||h[0];return x?x.nombre:'';}
+function personName(p){if(!showNames()||p.role==='miss')return '';const f=NAMES[p.fam];if(!f)return '';return p.kid?kidName(p.fam,p.grade,p.idx):(p.g==='papa'?f.papa:f.mama)||'';}
 const pkey=p=>p.kid?`${p.fam}:h${p.idx}`:`${p.fam}:${p.g}`;
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 
@@ -858,7 +875,7 @@ function renderTable(pl){
   const q=$('f-filter').value.trim().toUpperCase();
   const side=p=>p.lat<-0.1?'Iz':p.lat>0.1?'De':'Ce';
   const who=p=>p.kid?(p.f.kids>1?'Hijo/a '+p.idx:'Hijo/a'):GENDER[p.g];
-  const emo=p=>p.role==='miss'?'<span title="Miss">👩‍🏫</span>':`<span title="${who(p)}">${p.kid?'🧒':p.g==='papa'?'👨':'👩'}</span>${p.kid&&p.f.kids>1?`<small>${p.idx}</small>`:''}`;
+  const emo=p=>p.role==='miss'?'<span title="Miss">👩‍🏫</span>':`<span title="${who(p)}">${p.kid?'🧒':p.g==='papa'?'👨':'👩'}</span>${p.kid&&p.f.kids>1?`<small>${p.idx}</small>`:''}${personName(p)?`<span class="pn">${esc(personName(p))}</span>`:''}`;
   const bs=(al,c)=>al>c+0.1?'Iz':al<c-0.1?'De':'Ce';
   const SHORT=Object.fromEntries(Object.entries({aguila:'Águila',coreo:'Coreografía',canto:'Canto',antorcha:'Antorcha',pancarta:'Pancarta',escudo:'Escudo',letra:'Letra',bat:'Batucada',dragon:'Dragón',muneco:'Muñeco',pompon:'Pompón',baston:'Bastón'}).map(([k,v])=>[k,k==='letra'?v:withSym(k,v)]));
   const rol=p=>p.role==='padre'||p.role==='nino'?'sin rol':p.role==='letra'?`Letra ${p.letter||''}`:SHORT[p.role];
@@ -866,7 +883,7 @@ function renderTable(pl){
   const bar=p=>p.b.blk==='kids'?`Niños F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.blk==='parents'?`Padres F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.row==='MU'?'Muñecos (fondo)':p.b.row==='S'?`Costado ${bs(p.b.al,ourAl)}`:p.b.row==='M'&&!p.b.r?'Borde der.':p.b.row==='M'?`F${p.b.r} ${bs(p.b.al,ourAl)} borde`:p.b.blk==='col'?`F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.blk==='L'?`L${p.b.r}`:p.b.row==='B'||p.b.row==='C'?'Bat':p.b.row==='F'?'Atr':p.b.row==='D'?'Del':p.b.blk?`${p.b.blk} F${p.b.r}`:`F${p.b.row} P${p.bpos}`;
   const list=pl.P.filter(p=>!q||p.fam.toUpperCase().includes(q)).sort((a,b)=>a.fam.localeCompare(b.fam)||a.kid-b.kid||a.idx-b.idx);
   let last='';
-  $('tbody').innerHTML=list.map(p=>{const st=p.fam!==last?' class="fam-start"':'';const code=p.role==='miss'?'Miss <span style="color:var(--muted);font-weight:400">'+esc(p.grade)+'</span>':p.fam!==last?esc(p.fam)+' <span style="color:var(--muted);font-weight:400">'+[...new Set(p.f.kid.map(k=>k.grade))].join('/')+'</span>':'';last=p.fam;
+  $('tbody').innerHTML=list.map(p=>{const st=p.fam!==last?' class="fam-start"':'';const code=p.role==='miss'?'Miss <span style="color:var(--muted);font-weight:400">'+esc(p.grade)+'</span>':p.fam!==last?esc(p.fam)+' <span style="color:var(--muted);font-weight:400">'+[...new Set(p.f.kid.map(k=>k.grade))].join('/')+'</span>'+(famName(p.fam)?`<span class="pn">${esc(famName(p.fam))}</span>`:''):'';last=p.fam;
     if(p.role==='miss')return `<tr class="fam-start"><td class="code">${code}</td><td class="who">${emo(p)}</td><td>Miss</td><td class="pos">F${p.prow} ${side(p)}</td><td class="pos">${bar(p)}</td></tr>`;
     const k=pkey(p),cur=ST.over[k]||'',opts=['aguila','coreo','canto','pancarta','escudo','antorcha','letra','bat','dragon','muneco','pompon','baston'];
     const sel=p.kid?'<span style="color:var(--muted)">no lleva nada</span>':`<select class="${cur?'manual':''}" data-k="${esc(k)}" aria-label="Rol de ${esc(p.fam)} ${esc(who(p))}"><option value=""${cur?'':' selected'}>${cur?'Automático':esc(rol(p))+' · auto'}</option><option value="libre"${cur==='libre'?' selected':''}>Sin rol</option>${opts.map(o=>`<option value="${o}"${cur===o?' selected':''}>${SHORT[o]}</option>`).join('')}</select>`;
@@ -878,7 +895,7 @@ function renderTable(pl){
 const LOG_DEFAULT=['Dirigir armado e inflado de globos','Trasladar torres y globos al colegio','Pagar el dragón','Pagar la batucada','Recibir el dragón','Parlante y micrófonos','Repartir refrigerio'];
 let TASKS_CUR=[];
 function roleTasks(pl){
-  const who=p=>p.role==='miss'?'Miss '+p.grade:p.kid?p.fam+' (hijo/a)':p.fam+(p.g==='papa'?' papá':' mamá');
+  const who=p=>{const n=personName(p);return p.role==='miss'?'Miss '+p.grade:(p.kid?p.fam+' (hijo/a)':p.fam+(p.g==='papa'?' papá':' mamá'))+(n?' · '+n:'');};
   const of=r=>pl.P.filter(p=>p.role===r),out=[];
   const add=(id,title,ps)=>out.push({id,title,auto:ps.map(who).join(', ')||'sin asignar'});
   add('r-coreo',withSym('coreo','Dirigir la coreografía'),of('coreo'));
@@ -1365,8 +1382,8 @@ function renderAtt(){
   $('att-list').innerHTML=Object.keys(groups).sort().map(g=>`<h4>${esc(g)}</h4>`+groups[g].map(f=>{
     if(f.absent)return `<div class="arow out"><span class="acode">${esc(f.code)}</span><span class="anote">No asiste (marcado en la lista)</span></div>`;
     const a=ST.att[f.code]||{};
-    return `<div class="arow"><button class="acode" data-fam="${esc(f.code)}" title="Marcar a toda la familia">${esc(f.code)} <small>${esc(f.grades.join('/'))}</small></button>`+
-      AKEYS(f).map(k=>{const v=a[k]||'pend';return `<button class="ap ${v}" data-fam="${esc(f.code)}" data-k="${k}" aria-label="${esc(f.code)} ${k}: ${v==='si'?'viene':v==='no'?'no viene':'pendiente'}">${AEMO(f,k)}</button>`;}).join('')+`</div>`;}).join('')).join('');
+    return `<div class="arow"><button class="acode" data-fam="${esc(f.code)}" title="Marcar a toda la familia">${esc(f.code)} <small>${esc(f.grades.join('/'))}</small>${famName(f.code)?`<span class="af">${esc(famName(f.code))}</span>`:''}</button>`+
+      AKEYS(f).map(k=>{const v=a[k]||'pend';return `<button class="ap ${v}" data-fam="${esc(f.code)}" data-k="${k}" aria-label="${esc(f.code)} ${k}: ${v==='si'?'viene':v==='no'?'no viene':'pendiente'}">${AEMO(f,k)}${(()=>{const n=k==='papa'||k==='mama'?(showNames()&&NAMES[f.code]?NAMES[f.code][k]:''):kidName(f.code,f.grades[+k.slice(1)-1]||f.grades[0],+k.slice(1));return n?`<span class="an">${esc(n)}</span>`:'';})()}</button>`;}).join('')+`</div>`;}).join('')).join('');
 }
 let attTimer;
 function attChanged(){saveState();renderAtt();clearTimeout(attTimer);attTimer=setTimeout(rebuild,400);}
@@ -1393,6 +1410,17 @@ $('att-copy').addEventListener('click',()=>{
   Object.keys(grp).sort().forEach(g=>{text+=`\n${g}\n`+grp[g].map(r=>`${r.f.code} ${mark(r)||(r.f.absent?'no viene':'—')}${[r.papa,r.mama,...r.kids].includes('pendiente')?' (pendiente)':''}`).join('\n')+'\n';});
   try{navigator.clipboard.writeText(text).then(()=>{$('att-msg').textContent='Resumen copiado. Pégalo en WhatsApp.';},()=>{$('att-msg').textContent='Tu navegador no dejó copiar.';});}catch(err){$('att-msg').textContent='Tu navegador no dejó copiar.';}
 });
+function namesMsg(){$('names-msg').textContent=NAMES?`${Object.keys(NAMES).length} familias con nombres en este navegador.`:'Sin nombres importados.';$('names-show').checked=ST.showNames!==false;}
+function namesChanged(){namesMsg();if(PL)renderInfo(PL);if(!apanel.hidden)renderAtt();}
+$('names-file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const d=JSON.parse(r.result);const fams=d.familias||d;if(typeof fams!=='object'||Array.isArray(fams))throw 0;
+      NAMES=fams;try{localStorage.setItem(NAMES_KEY,JSON.stringify(fams));}catch(err){}ST.showNames=true;saveState();namesChanged();}
+    catch(err){$('names-msg').textContent='No pude leer el archivo: tiene que ser el .json de nombres.';}
+    e.target.value='';};
+  r.readAsText(f);});
+$('names-clear').addEventListener('click',()=>{NAMES=null;try{localStorage.removeItem(NAMES_KEY);}catch(err){}namesChanged();});
+$('names-show').addEventListener('change',e=>{ST.showNames=e.target.checked;saveState();namesChanged();});
+namesMsg();
 function toggleAtt(){if(apanel.hidden){panel.hidden=true;cpanel.hidden=true;renderAtt();apanel.hidden=false;$('att-close').focus();}else apanel.hidden=true;}
 $('open-att').addEventListener('click',toggleAtt);
 $('att-close').addEventListener('click',()=>{apanel.hidden=true;});
