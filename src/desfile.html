@@ -194,18 +194,17 @@ tr.fam-start td{border-top:2px solid var(--line)}
           <button id="ly-props" aria-pressed="true" title="Globos, letras, pancarta, dragón">Materiales</button>
           <button id="ly-roofs" aria-pressed="true" title="Techos del escenario, graderías y corredor">Techos</button>
         </div>
-        <div class="seg tools" role="group" aria-label="Dibujar">
-          <button id="d-route" aria-pressed="false">Dibujar ruta</button>
-          <button id="d-bar" aria-pressed="false">Dibujar barra</button>
+        <div class="seg tools" id="drawbar" role="group" aria-label="Dibujo" hidden>
           <button id="d-undo" hidden>Deshacer punto</button>
-          <button id="d-reset">Borrar líneas</button>
+          <button id="d-done">Terminar</button>
+          <button id="d-cancel">Cancelar</button>
         </div>
         <div class="phase" id="phase">Ingreso</div>
       </div>
       <div class="needroute" id="needroute" hidden>
         <b>Falta el recorrido del desfile</b>
-        <span>Dibújalo sobre el plano: toca punto por punto desde la entrada hasta la barra.</span>
-        <button class="help act" id="need-draw">Dibujar recorrido</button>
+        <span>Se define en Configuración → Configuración avanzada.</span>
+        <button class="help act" id="need-draw">Abrir configuración avanzada</button>
       </div>
       <div class="bar">
         <div class="stages" role="group" aria-label="Momentos"><button id="st-1" aria-pressed="false" title="Posición inicial: la columna del desfile">Desfile</button><button id="play" aria-pressed="false">▶ Transición</button><button id="st-2" aria-pressed="false" title="Posición final: la barra frente al jurado">Barra</button></div>
@@ -270,11 +269,18 @@ tr.fam-start td{border-top:2px solid var(--line)}
     <label for="i-face">Frente de la barra<select id="i-face"><option value="jurado">Hacia el jurado (escenario)</option><option value="sur">De espaldas al escenario</option></select></label>
   </section>
   <div class="lg"><h3>Familias</h3>
-    <p class="note" style="margin:0">Una familia por línea: código de 2 o 3 letras, cantidad de hijos (si no es 1), grado de cada hijo (K1, K2, K3) y roles opcionales. <span class="mono">-</span> al inicio = no asiste; mientras nadie esté marcado se usa la asistencia estimada. Roles: <span class="mono">aguila pancarta bat dragon muneco pompon direccion</span> (con <span class="mono">papa:</span> o <span class="mono">mama:</span> se elige quién) y <span class="mono">antorcha baston letra escudo</span> (hijo). <span class="mono">sin-papa</span> / <span class="mono">sin-mama</span> = asiste uno solo.</p>
+    <p class="note" style="margin:0">Una familia por línea: código de 2 o 3 letras, cantidad de hijos (si no es 1), grado de cada hijo (K1, K2, K3) y roles opcionales. <span class="mono">-</span> al inicio = no asiste; mientras nadie esté marcado se usa la asistencia estimada. Roles (los llevan papás y mamás): <span class="mono">aguila direccion pancarta escudo antorcha letra bat dragon muneco pompon baston</span>; con <span class="mono">papa:</span> o <span class="mono">mama:</span> delante se elige quién. <span class="mono">sin-papa</span> / <span class="mono">sin-mama</span> = asiste uno solo.</p>
     <textarea id="fam-list" spellcheck="false" aria-label="Lista de familias" style="min-height:260px"></textarea>
     <div class="row"><button class="btn" id="fam-apply">Aplicar lista</button><button class="btn" id="fam-reset">Volver a la lista del directorio</button></div>
     <span class="note" id="fam-msg"></span>
   </div>
+  <details class="lg" id="adv">
+    <summary><h3 style="display:inline">Configuración avanzada</h3></summary>
+    <p class="note" style="margin:6px 0">Ruta del desfile y línea de barra. Al dibujar se cierra este panel: toca el plano punto por punto y usa Deshacer / Terminar en el visor.</p>
+    <div class="row"><button class="btn" id="d-route">Dibujar ruta</button><button class="btn" id="d-bar">Dibujar barra</button><button class="btn" id="d-reset">Volver a la ruta por defecto</button></div>
+    <div class="row"><button class="btn" id="d-export">Exportar ruta</button><span class="note" id="exp-msg"></span></div>
+    <textarea id="exp-text" readonly hidden style="min-height:110px" aria-label="Ruta exportada"></textarea>
+  </details>
   <p class="note">Todo se guarda en este navegador. Tecla C abre y cierra este panel.</p>
 </aside>
 <aside id="legend-panel" class="drawer" aria-label="Leyenda" hidden>
@@ -421,8 +427,10 @@ let ST=(()=>{try{return JSON.parse(localStorage.getItem(STATE_KEY))||{}}catch(e)
 ST.over=ST.over||{};ST.inputs=ST.inputs||{};
 function saveNow(){try{localStorage.setItem(STATE_KEY,JSON.stringify(ST))}catch(e){}}
 let saveTimer;function saveState(){clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,250);}
-let ROUTE=ST.route&&ST.route.length>1?ST.route:null; // null until the viewer draws the route
-let BARLINE=ST.bar&&ST.bar.length===2?ST.bar:null;
+// default route and barra line (plan pixels); a route drawn in this browser wins
+const DEFAULT_ROUTE=null, DEFAULT_BAR=null;
+let ROUTE=ST.route&&ST.route.length>1?ST.route:DEFAULT_ROUTE&&DEFAULT_ROUTE.map(q=>[...q]);
+let BARLINE=ST.bar&&ST.bar.length===2?ST.bar:DEFAULT_BAR&&DEFAULT_BAR.map(q=>[...q]);
 const pkey=p=>p.kid?`${p.fam}:h${p.idx}`:`${p.fam}:${p.g}`;
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 
@@ -1227,8 +1235,8 @@ function setDrawButtons(){
   $('d-route').setAttribute('aria-pressed',String(drawMode==='route'));$('d-bar').setAttribute('aria-pressed',String(drawMode==='bar'));
   $('d-route').textContent=drawMode==='route'?'Terminar ruta':'Dibujar ruta';$('d-bar').textContent=drawMode==='bar'?'Cancelar':'Dibujar barra';
 }
-function startDraw(mode){draft=[];drawMode=mode;$('needroute').hidden=true;setPlaying(false);setView('top');controls.enableRotate=false;setDrawButtons();drawDraft();}
-function cancelDraw(){drawMode=null;draft=[];$('d-undo').hidden=true;if(draftObj)scene.remove(draftObj);draftObj=null;controls.enableRotate=true;setDrawButtons();if(PL)routeState();}
+function startDraw(mode){draft=[];drawMode=mode;$('needroute').hidden=true;if(typeof cpanel!=='undefined')cpanel.hidden=true;$('drawbar').hidden=false;$('d-done').hidden=mode!=='route';showViewer();setPlaying(false);setView('top');controls.enableRotate=false;setDrawButtons();drawDraft();}
+function cancelDraw(){drawMode=null;draft=[];$('d-undo').hidden=true;$('drawbar').hidden=true;if(draftObj)scene.remove(draftObj);draftObj=null;controls.enableRotate=true;setDrawButtons();if(PL)routeState();}
 function finishDraw(){
   const pts=draft.filter((q,i)=>!i||Math.hypot(q[0]-draft[i-1][0],q[1]-draft[i-1][1])>2).map(q=>[Math.round(q[0]*10)/10,Math.round(q[1]*10)/10]);
   if(drawMode==='route'&&pts.length>=2){ROUTE=pts;ST.route=pts;T=0;}
@@ -1246,7 +1254,15 @@ function undoPoint(){if(draft.length){draft.pop();drawDraft();}}
 $('d-undo').addEventListener('click',undoPoint);
 $('d-route').addEventListener('click',()=>drawMode==='route'?finishDraw():startDraw('route'));
 $('d-bar').addEventListener('click',()=>drawMode==='bar'?cancelDraw():startDraw('bar'));
-$('d-reset').addEventListener('click',()=>{cancelDraw();delete ST.route;delete ST.bar;ROUTE=null;BARLINE=null;$('i-len').value=24;ST.inputs['i-len']='24';saveState();rebuild();});
+$('d-reset').addEventListener('click',()=>{cancelDraw();delete ST.route;delete ST.bar;ROUTE=DEFAULT_ROUTE&&DEFAULT_ROUTE.map(q=>[...q]);BARLINE=DEFAULT_BAR&&DEFAULT_BAR.map(q=>[...q]);$('i-len').value=24;ST.inputs['i-len']='24';saveState();rebuild();});
+$('d-done').addEventListener('click',finishDraw);
+$('d-cancel').addEventListener('click',cancelDraw);
+$('d-export').addEventListener('click',()=>{
+  const text=JSON.stringify({ruta:ROUTE,barra:BARLINE,largoBarra:+$('i-len').value});
+  const ta=$('exp-text');ta.value=text;ta.hidden=false;ta.select();
+  const ok=()=>{$('exp-msg').textContent='Copiada. Pégala en el chat para dejarla por defecto.';};
+  try{navigator.clipboard.writeText(text).then(ok,()=>{$('exp-msg').textContent='Selecciona el texto de abajo y cópialo.';});}catch(e){$('exp-msg').textContent='Selecciona el texto de abajo y cópialo.';}
+});
 // keep the moment and the camera too
 const HELP_CTX={
   general:'',
@@ -1309,7 +1325,7 @@ $('fam-list').value=store.get('desfile-familias-v3')||sampleFamilies();
 $('fam-list').addEventListener('input',e=>store.set('desfile-familias-borrador',e.target.value));
 FAMS=parseFamilies(store.get('desfile-familias-v3')||sampleFamilies());
 T=typeof ST.T==='number'?ST.T:1e9;if(ST.view)view=ST.view;
-$('need-draw').addEventListener('click',()=>startDraw('route'));
+$('need-draw').addEventListener('click',()=>{toggleConfig();$('adv').open=true;$('adv').scrollIntoView({block:'start'});});
 overMsg();
 rebuild();resize();
 // #barra opens on the finished formation seen from the jury
