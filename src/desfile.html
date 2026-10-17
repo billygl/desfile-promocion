@@ -147,6 +147,13 @@ svg text.code{fill:var(--fg)}
 ol,ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:5px}
 li{max-width:72ch}
 .mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.sync{display:inline-flex;align-items:center;gap:8px;margin:8px 0 0;padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:.8rem;color:var(--muted);background:var(--surface)}
+.sync.wait::before{content:"";width:10px;height:10px;border:2px solid var(--line);border-top-color:var(--fg);border-radius:50%;animation:spin .8s linear infinite}
+.sync.ok::before{content:"●";color:#2e9d5b}.sync.err::before{content:"●";color:#c4232b}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ro-only,.admin-only{display:none}.ro .ro-only{display:block}body:not(.ro) .admin-only{display:flex}
+.ro #att-reset,.ro #task-add,.ro #task-restore,.ro #over-clear,.ro #fam-apply,.ro #fam-reset,.ro [data-del],.ro #d-route,.ro #d-bar,.ro #d-reset{display:none}
+.ro #att-list button,.ro #tasks input,.ro #tbody select,.ro #att-pend,.ro #fam-list,.ro .controls input,.ro .controls select{pointer-events:none}
 .note{font-size:.85rem;color:var(--muted);border-left:3px solid var(--accent);padding-left:10px}
 textarea{width:100%;min-height:180px;font-family:var(--f-mono);font-size:.85rem;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);resize:vertical}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -187,6 +194,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
     <div class="eyebrow">Olimpiadas · Colegio María Alvarado</div>
     <h1>Desfile y barra de la promoción</h1>
     <p class="lede">Simulación 3D sobre el plano del colegio: la columna recorre la ruta roja, pasa frente al escenario y forma la barra mirando al jurado. Cada familia aparece solo con su código de iniciales.</p>
+    <p class="sync wait" data-sync>Cargando asignaciones de la hoja…</p>
   </header>
 
   <details class="card" id="s-resumen" open>
@@ -252,7 +260,8 @@ tr.fam-start td{border-top:2px solid var(--line)}
 
   <details class="card" id="s-tareas" open>
     <summary><h2>Tareas y roles</h2><span class="hint" id="task-prog"></span></summary>
-    <p>Quién se encarga de cada cosa. En los roles, los responsables salen solos de la propuesta; si hace falta, escribe otro encima. Marca cada tarea cuando quede lista. Todo se guarda en este navegador.</p>
+    <p>Quién se encarga de cada cosa. En los roles, los responsables salen solos de la propuesta; si hace falta, escribe otro encima. Marca cada tarea cuando quede lista. Lo asigna el administrador y todos ven lo mismo al momento.</p>
+    <p class="sync wait" data-sync>Cargando asignaciones de la hoja…</p>
     <div class="row"><button class="btn" id="task-add">Agregar tarea</button><button class="btn" id="task-copy">Copiar lista para WhatsApp</button><button class="btn" id="task-restore" hidden>Volver a mostrar las quitadas</button><span class="note" id="task-msg"></span></div>
     <ol class="tasks" id="tasks"></ol>
   </details>
@@ -276,6 +285,9 @@ tr.fam-start td{border-top:2px solid var(--line)}
 
 <aside id="att-panel" class="drawer" aria-label="Asistencia" hidden>
   <div class="ph"><h2>Asistencia</h2><button class="btn" id="att-close">Cerrar</button></div>
+  <p class="sync wait" data-sync>Cargando asistencia de la hoja…</p>
+  <p class="note ro-only" id="att-ro" style="margin:0">Solo el administrador cambia la asistencia.</p>
+  <label class="chk admin-only" for="att-live" style="gap:8px;align-items:center;font-size:.88rem"><input type="checkbox" id="att-live"> Publicar la asistencia real (si no, todos ven el plan con todas las familias)</label>
   <div class="key" id="att-sum"></div>
   <label class="chk" for="att-pend" style="display:flex;gap:8px;align-items:center;font-size:.88rem"><input type="checkbox" id="att-pend" checked> Contar a los pendientes como que vienen</label>
   <p class="note" style="margin:0">Toca a cada persona para cambiar: <b>pendiente → viene → no viene</b>. Toca el código para marcar a toda la familia. El desfile y la barra se recalculan solos.</p>
@@ -300,6 +312,11 @@ tr.fam-start td{border-top:2px solid var(--line)}
     <textarea id="fam-list" spellcheck="false" aria-label="Lista de familias" style="min-height:260px"></textarea>
     <div class="row"><button class="btn" id="fam-apply">Aplicar lista</button><button class="btn" id="fam-reset">Volver a la lista del directorio</button></div>
     <span class="note" id="fam-msg"></span>
+  </div>
+  <div class="lg"><h3>Administrador</h3>
+    <p class="note" style="margin:0">Con la clave cambias asistencia, roles, tareas y el plano; los demás lo ven al momento. También sirve abrir la página con <span class="mono">?clave=…</span>.</p>
+    <div class="row"><input id="admin-key" type="password" placeholder="Clave" aria-label="Clave de administrador" autocomplete="off" style="font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)"><button class="btn" id="admin-in">Entrar</button><button class="btn" id="admin-out">Salir</button></div>
+    <span class="note" id="admin-msg"></span>
   </div>
   <details class="lg" id="adv">
     <summary><h3 style="display:inline">Configuración avanzada</h3></summary>
@@ -461,7 +478,7 @@ function parseFamilies(text){
 const STATE_KEY='desfile-estado-v1';
 let ST=(()=>{try{return JSON.parse(localStorage.getItem(STATE_KEY))||{}}catch(e){return {}}})();
 ST.over=ST.over||{};ST.inputs=ST.inputs||{};
-function saveNow(){try{localStorage.setItem(STATE_KEY,JSON.stringify(ST))}catch(e){}}
+function saveNow(){try{localStorage.setItem(STATE_KEY,JSON.stringify(ST))}catch(e){}queuePush();}
 let saveTimer;function saveState(){clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,250);}
 // default route and barra line (plan pixels); a route drawn in this browser wins
 const DEFAULT_ROUTE=[[615.4,372],[647.7,330.7],[528.8,243.5],[547,195.5],[461.4,131.2],[421.3,176.7]], DEFAULT_BAR=null;
@@ -507,7 +524,8 @@ function pickEven(arr,n){const out=[];for(let k=0;k<n&&arr.length;k++)out.push(a
 
 function plan(c,fams){
   // attendance taken person by person; pending people count as coming unless the viewer says otherwise
-  const ATT=ST.att||{},pendOK=ST.attPending!==false;
+  // until the admin publishes it, everyone sees the plan with every family
+  const live=ST.attLive===true,ATT=live?ST.att||{}:{},pendOK=!live||ST.attPending!==false;
   const comes=(code,k)=>{const v=(ATT[code]||{})[k];return v==='si'||(!v&&pendOK);};
   fams.forEach(f=>{f.est=false;f.gNow=f.genders.filter(g=>comes(f.code,g));f.kNow=[...Array(f.kids).keys()].filter(i=>comes(f.code,'h'+(i+1)));});
   const att=fams.filter(f=>!f.absent&&(f.gNow.length||f.kNow.length));
@@ -768,7 +786,7 @@ function renderInfo(pl){
   const gradeTile=pl.mode==='columna'?stat('1 × '+pl.blocks[0].rows+' filas',`barra: columna de ${(pl.Lb/3).toFixed(1)} m × ${pl.blocks[0].depth.toFixed(0)} m de fondo`):stat(nRowsB+' filas','barra, + escudo y pancarta delante');
   const pct=Math.round(100*pl.att.length/pl.fams.length),est=pl.fams.some(f=>f.est);
   $('stats').innerHTML=
-    stat(pl.P.length,'personas (con las 6 misses)')+stat(pl.att.length+' / '+pl.fams.length,'familias vienen'+(ST.attPending!==false&&attCounts().pend?' (con pendientes)':''))+stat(pl.kids,'niños')+stat(pl.parents-6,'padres y madres')+
+    stat(pl.P.length,'personas (con las 6 misses)')+stat(pl.att.length+' / '+pl.fams.length,'familias vienen'+(ST.attLive!==true?' (asistencia sin publicar)':ST.attPending!==false&&attCounts().pend?' (con pendientes)':''))+stat(pl.kids,'niños')+stat(pl.parents-6,'padres y madres')+
     stat('6 × '+pl.rows,'columnas × filas de familias')+stat(pl.maxLon.toFixed(0)+' m','largo de la columna')+
     (ROUTE?stat(fmtT((PATH.L+pl.maxLon)/V),'min:seg de recorrido a 1 m/s'):stat('—','dibuja el recorrido en el visor'))+gradeTile;
   const sh=(svg)=>`<svg width="12" height="12" viewBox="0 0 12 12" style="vertical-align:-1px;margin-right:5px">${svg}</svg>`;
@@ -1401,7 +1419,8 @@ function attCounts(){let si=0,no=0,pend=0;(FAMS||[]).filter(f=>!f.absent).forEac
 function renderAtt(){
   const q=$('att-q').value.trim().toUpperCase(),c=attCounts();
   $('att-sum').innerHTML=`<span><b>${c.si}</b> vienen</span><span><b>${c.no}</b> no vienen</span><span><b>${c.pend}</b> pendientes</span>`;
-  $('att-pend').checked=ST.attPending!==false;
+  $('att-pend').checked=ST.attPending!==false;$('att-live').checked=ST.attLive===true;
+  $('att-ro').textContent=ST.attLive===true?'Solo el administrador cambia la asistencia.':'La asistencia aún no se publica: el plan cuenta a todas las familias.';
   const groups={};
   FAMS.forEach(f=>{if(q&&!f.code.toUpperCase().includes(q))return;(groups[f.grades[0]||'Sin grado']=groups[f.grades[0]||'Sin grado']||[]).push(f);});
   $('att-list').innerHTML=Object.keys(groups).sort().map(g=>`<h4>${esc(g)}</h4>`+groups[g].map(f=>{
@@ -1419,6 +1438,7 @@ $('att-list').addEventListener('click',e=>{const b=e.target.closest('button[data
   attChanged();});
 $('att-q').addEventListener('input',renderAtt);
 $('att-pend').addEventListener('change',e=>{ST.attPending=e.target.checked;attChanged();});
+$('att-live').addEventListener('change',e=>{ST.attLive=e.target.checked;attChanged();});
 $('att-reset').addEventListener('click',()=>{ST.att={};attChanged();$('att-msg').textContent='Asistencia reiniciada: todos pendientes.';});
 function attRows(){return FAMS.map(f=>{const a=ST.att[f.code]||{};const st=k=>f.absent?'no':a[k]==='si'?'viene':a[k]==='no'?'no viene':'pendiente';
   return {f,papa:f.genders.includes('papa')?st('papa'):'—',mama:f.genders.includes('mama')?st('mama'):'—',kids:[...Array(f.kids).keys()].map(i=>st('h'+(i+1)))};});}
@@ -1483,7 +1503,7 @@ function applyList(text,save){
   if(f.filter(x=>!x.absent).length<4){$('fam-msg').textContent='La lista necesita al menos 4 familias que asistan.';return;}
   FAMS=f;if(save){store.set('desfile-familias-v3',text);store.del('desfile-familias-borrador');}
   $('fam-msg').textContent=`${f.length} familias leídas, ${f.filter(x=>!x.absent).length} asisten.`;
-  rebuild();
+  rebuild();queuePush();
 }
 $('fam-apply').addEventListener('click',()=>applyList($('fam-list').value,true));
 $('fam-reset').addEventListener('click',()=>{store.del('desfile-familias-v3');$('fam-list').value=sampleFamilies();applyList($('fam-list').value,false);});
@@ -1502,8 +1522,68 @@ $('fam-list').addEventListener('input',e=>store.set('desfile-familias-borrador',
 FAMS=parseFamilies(store.get('desfile-familias-v3')||sampleFamilies());
 T=typeof ST.T==='number'?ST.T:1e9;if(ST.view&&ST.view!=='follow')view=ST.view;
 $('need-draw').addEventListener('click',()=>{toggleConfig();$('adv').open=true;$('adv').scrollIntoView({block:'start'});});
+/* ---------- hoja de Google: lo compartido (asistencia, roles, tareas, plano) ---------- */
+// Everyone reads it; only the admin key writes. Polls send just the revision number and get a tiny
+// "same" answer unless something changed. Private names never leave this browser.
+const API='https://script.google.com/macros/s/AKfycbw7uLgeQv9NBYLDy7YUlmmrvhmrT7EedAqtusaBKscqYXW4SeaOBK_Tsg1425ArSg/exec';
+const SYNC_KEY='desfile-remoto-v1',KEY_KEY='desfile-clave',POLL_MS=30000;
+var ADMIN=(()=>{const q=new URLSearchParams(location.search),u=q.get('clave');
+  if(u){store.set(KEY_KEY,u);q.delete('clave');history.replaceState(null,'',location.pathname+(q.toString()?'?'+q:'')+location.hash);}
+  return store.get(KEY_KEY)||'';})();
+var REV=0,LAST_AT='',synced=null,pushTimer=null,pulling=false;
+function shared(){return {att:ST.att||{},attPending:ST.attPending!==false,attLive:ST.attLive===true,over:ST.over||{},tasks:ST.tasks||{},customTasks:ST.customTasks||[],hiddenTasks:ST.hiddenTasks||[],
+  inputs:Object.fromEntries(Object.entries(ST.inputs||{}).filter(([k])=>k!=='speed')),route:ST.route||null,bar:ST.bar||null,fams:store.get('desfile-familias-v3')||null};}
+const hhmm=s=>{const d=s?new Date(s):new Date();return isNaN(d)?'':d.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});};
+function syncMsg(t,cls){document.querySelectorAll('[data-sync]').forEach(el=>{el.textContent=t;el.className='sync '+(cls||'');});}
+function okMsg(){syncMsg((ADMIN?'Administrador · ':'')+'Al día con la hoja'+(LAST_AT?' · '+hhmm(LAST_AT):''),'ok');}
+function applyShared(d,render){if(!d)return;
+  ST.att=d.att||{};ST.attPending=d.attPending!==false;ST.attLive=d.attLive===true;ST.over=d.over||{};ST.tasks=d.tasks||{};ST.customTasks=d.customTasks||[];ST.hiddenTasks=d.hiddenTasks||[];
+  ST.inputs=Object.assign({},d.inputs||{},ST.inputs&&ST.inputs.speed!==undefined?{speed:ST.inputs.speed}:{});INPUTS.forEach(id=>{const el=$(id),v=ST.inputs[id];if(v!==undefined){if(el.type==='checkbox')el.checked=v;else el.value=v;}});
+  if(d.route&&d.route.length>1){ST.route=d.route;ROUTE=d.route;}else{delete ST.route;ROUTE=DEFAULT_ROUTE&&DEFAULT_ROUTE.map(q=>[...q]);}
+  if(d.bar&&d.bar.length===2){ST.bar=d.bar;BARLINE=d.bar;}else{delete ST.bar;BARLINE=DEFAULT_BAR&&DEFAULT_BAR.map(q=>[...q]);}
+  if(d.fams){store.set('desfile-familias-v3',d.fams);$('fam-list').value=d.fams;FAMS=parseFamilies(d.fams);}
+  synced=JSON.stringify(shared());try{localStorage.setItem(STATE_KEY,JSON.stringify(ST))}catch(e){}
+  if(render){overMsg();rebuild();if(!apanel.hidden)renderAtt();}}
+const hasLocal=()=>{const d=shared();return !!(Object.keys(d.att).length||Object.keys(d.over).length||Object.keys(d.tasks).length||d.customTasks.length||d.fams||d.route||d.bar);};
+const pending=()=>synced!==null&&JSON.stringify(shared())!==synced;
+async function pull(){if(pulling||!API.startsWith('http')||(ADMIN&&pending()))return;pulling=true;
+  try{const r=await fetch(API+'?rev='+REV+(ADMIN?'&key='+encodeURIComponent(ADMIN):''),{cache:'no-store'});const j=await r.json();
+    if(!j.same){REV=j.rev;LAST_AT=j.at||'';
+      // first time the admin syncs a device that has its own assignments: ask which copy wins
+      if(j.data&&ADMIN&&synced===null&&hasLocal()&&JSON.stringify(shared())!==JSON.stringify(j.data)&&
+        !confirm('La hoja ya tiene asignaciones guardadas y este dispositivo tiene otras.\n\nAceptar: usar las de la hoja.\nCancelar: reemplazar la hoja con las de este dispositivo.')){synced='';queuePush();}
+      else if(j.data){if(!(ADMIN&&pending())){applyShared(j.data,true);store.set(SYNC_KEY,JSON.stringify(j));}}
+      else if(ADMIN){synced='';queuePush();}}
+    // empty sheet (revision 0): the admin's first visit fills it
+    else if(synced===null&&ADMIN&&REV===0){synced='';queuePush();}
+    if(!pushTimer)okMsg();}
+  catch(e){syncMsg('Sin conexión con la hoja; se muestra lo último guardado.','err');}
+  pulling=false;}
+function queuePush(){if(!ADMIN||synced===null||!API.startsWith('http')||!pending())return;
+  syncMsg('Guardando en la hoja…','wait');clearTimeout(pushTimer);pushTimer=setTimeout(push,1200);}
+function sheetTables(){
+  const asistencia=[['Código','Grado','Papá','Mamá','Hijo 1','Hijo 2']].concat(attRows().map(r=>[r.f.code,r.f.grades.join('/'),r.papa,r.mama,r.kids[0]||'',r.kids[1]||'']));
+  const tareas=[['#','Tarea','Tipo','Responsable','Fecha y hora','Comentario','Lista']].concat(TASKS_CUR.map((x,i)=>{const t=ST.tasks[x.id]||{};return [i+1,x.title||'',x.kind,t.resp||x.auto||'',t.when||'',t.note||'',t.done?'sí':'no'];}));
+  return {asistencia,tareas};}
+async function push(){const data=shared(),str=JSON.stringify(data);
+  try{const r=await fetch(API,{method:'POST',body:JSON.stringify({key:ADMIN,data,tables:sheetTables()})});const j=await r.json();
+    if(j.error==='clave'){pushTimer=null;setAdmin('');syncMsg('La clave no es válida: quedó en solo lectura.','err');return;}
+    if(j.error)throw new Error(j.error);
+    REV=j.rev;LAST_AT=j.at;synced=str;store.set(SYNC_KEY,JSON.stringify({rev:j.rev,at:j.at,data}));pushTimer=null;
+    if(pending())queuePush();else syncMsg('Administrador · Guardado en la hoja · '+hhmm(j.at),'ok');}
+  catch(e){syncMsg('No se pudo guardar; reintento en 10 s.','err');pushTimer=setTimeout(push,10000);}}
+function setAdmin(k){ADMIN=k;if(k)store.set(KEY_KEY,k);else store.del(KEY_KEY);document.body.classList.toggle('ro',!k);$('admin-key').value=k;
+  $('admin-msg').textContent=k?'Modo administrador: tus cambios se guardan en la hoja.':'Solo lectura.';if(PL)renderAtt();}
+$('admin-in').addEventListener('click',async()=>{const k=$('admin-key').value.trim();if(!k)return;$('admin-msg').textContent='Comprobando…';
+  try{const j=await(await fetch(API,{method:'POST',body:JSON.stringify({key:k,check:true})})).json();
+    if(j.ok){setAdmin(k);REV=0;pull();}else $('admin-msg').textContent='Clave incorrecta.';}catch(e){$('admin-msg').textContent='No hay conexión con la hoja.';}});
+$('admin-out').addEventListener('click',()=>{setAdmin('');REV=0;pull();});
+setInterval(()=>{if(!document.hidden)pull();},POLL_MS);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull();});
+document.body.classList.toggle('ro',!ADMIN);
+{const c=(()=>{try{return JSON.parse(store.get(SYNC_KEY))}catch(e){return null}})();if(c&&c.data){REV=c.rev;LAST_AT=c.at||'';applyShared(c.data,false);}}
 overMsg();
-rebuild();resize();
+rebuild();resize();setAdmin(ADMIN);pull();
 // #barra opens on the finished formation seen from the jury
 if(location.hash==='#barra'){T=PL.tEnd;update(T);setView('jurado');}
 if(location.hash==='#aerea'){T=PL.tEnd;update(T);setView('top');}

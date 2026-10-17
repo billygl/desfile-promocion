@@ -1,0 +1,4 @@
+
+# clave y config de clasp: nunca al repo público
+backend/Clave.*
+.clasp.json

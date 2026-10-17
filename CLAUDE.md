@@ -47,3 +47,10 @@ git clone https://github.com/billygl/greens2037-home.git ../greens2037-home
 5. Comprobar en https://greens2037.website/desfile/ (Ctrl+F5).
 
 La hoja de respaldo en Google Sheets y el archivo de nombres se generan desde `lhs_directory` (token y entorno de Python locales, no están en git); hacerlo desde la computadora que los tenga.
+
+## Backend en Google Sheets (asistencia, roles, tareas y plano compartidos)
+
+- Código: `backend/Desfile.gs`. Vive en el script de la hoja "🎫confraternidad 17/10 (copia año pasado)" (cuenta de Google de Billy; script `1LT8joD3Fv4Uj5Mbl22-9uWi7AMUkTQ5IHX_O4kb8MReWKY5IZN1-lvDZ`). En esta compu está clonado con clasp en `_wks/desfile-script` (ahí se llama `Desfile.js`).
+- La clave de administrador está solo en `Clave.js` del proyecto de Apps Script. Nunca en este repo.
+- Para actualizar: copiar `backend/Desfile.gs` a `desfile-script/Desfile.js`, luego `clasp push -f` y `clasp deploy -i AKfycbw7uLgeQv9NBYLDy7YUlmmrvhmrT7EedAqtusaBKscqYXW4SeaOBK_Tsg1425ArSg`. Hay que redesplegar ese mismo id para que no cambie la URL que usa la página (`const API` en `src/desfile.html`).
+- La página consulta cada 30 s enviando solo su versión (`?rev=`); si no hubo cambios, Google responde `{same:true}`. Solo con la clave se guarda. La asistencia no se envía a los demás hasta que el administrador marca "Publicar la asistencia real".
