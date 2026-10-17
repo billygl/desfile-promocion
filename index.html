@@ -45,8 +45,11 @@ h2{font-size:1.25rem;font-weight:600}
 .seg{display:flex;flex-wrap:wrap;gap:2px;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);border-radius:8px;padding:2px;backdrop-filter:blur(6px)}
 button{font:inherit;font-size:.82rem;border:0;background:transparent;color:var(--fg);padding:6px 10px;border-radius:6px;cursor:pointer}
 button[aria-pressed="true"]{background:var(--accent);color:#fff}
+button:disabled,input:disabled{opacity:.4;cursor:not-allowed}
 .btn{border:1px solid var(--line);background:var(--surface)}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.needroute{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(340px,86%);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 10px 30px rgba(0,0,0,.18);text-align:center;align-items:center}
+.needroute span{font-size:.85rem;color:var(--muted)}
 .phase{font-family:var(--f-mono);font-size:.8rem;padding:6px 10px;border-radius:8px;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line)}
 .bar{position:absolute;left:10px;right:10px;bottom:10px;display:flex;gap:8px;align-items:center;background:color-mix(in srgb,var(--surface) 90%,transparent);border:1px solid var(--line);border-radius:10px;padding:6px 8px;backdrop-filter:blur(6px)}
 .bar input[type=range]{flex:1;min-width:0;accent-color:var(--accent)}
@@ -176,9 +179,14 @@ tr.fam-start td{border-top:2px solid var(--line)}
         <div class="seg tools" role="group" aria-label="Dibujar">
           <button id="d-route" aria-pressed="false">Dibujar ruta</button>
           <button id="d-bar" aria-pressed="false">Dibujar barra</button>
-          <button id="d-reset">Restaurar líneas</button>
+          <button id="d-reset">Borrar líneas</button>
         </div>
         <div class="phase" id="phase">Ingreso</div>
+      </div>
+      <div class="needroute" id="needroute" hidden>
+        <b>Falta el recorrido del desfile</b>
+        <span>Dibújalo sobre el plano: toca punto por punto desde la entrada hasta la barra.</span>
+        <button class="help act" id="need-draw">Dibujar recorrido</button>
       </div>
       <div class="bar">
         <button id="play" aria-pressed="false">▶ Reproducir</button>
@@ -385,7 +393,7 @@ let ST=(()=>{try{return JSON.parse(localStorage.getItem(STATE_KEY))||{}}catch(e)
 ST.over=ST.over||{};ST.inputs=ST.inputs||{};
 function saveNow(){try{localStorage.setItem(STATE_KEY,JSON.stringify(ST))}catch(e){}}
 let saveTimer;function saveState(){clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,250);}
-let ROUTE=ST.route&&ST.route.length>1?ST.route:ROUTE_PX.map(q=>[...q]);
+let ROUTE=ST.route&&ST.route.length>1?ST.route:null; // null until the viewer draws the route
 let BARLINE=ST.bar&&ST.bar.length===2?ST.bar:null;
 const pkey=p=>p.kid?`${p.fam}:h${p.idx}`:`${p.fam}:${p.g}`;
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
@@ -398,7 +406,8 @@ function cfg(){
 /* ---------- path ---------- */
 let PATH;
 function makePath(){
-  const pts=ROUTE.map(W), cum=[0];
+  // without a drawn route people just step into place from in front of the barra
+  const pts=(ROUTE||[fromWall(-0.5,6.5),fromWall(0.5,6.5)]).map(W), cum=[0];
   for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+Math.hypot(pts[i].x-pts[i-1].x,pts[i].z-pts[i-1].z));
   return {pts,cum,L:cum[cum.length-1]};
 }
@@ -637,7 +646,7 @@ function renderInfo(pl){
   $('stats').innerHTML=
     stat(pl.P.length,'personas')+stat(pl.att.length+' / '+pl.fams.length,'familias asisten ('+pct+'%'+(est?', estimado':'')+')')+stat(pl.kids,'niños')+stat(pl.parents,'padres y madres')+
     stat('6 × '+pl.rows,'columnas × filas de familias')+stat(pl.maxLon.toFixed(0)+' m','largo de la columna')+
-    stat(fmtT((PATH.L+pl.maxLon)/V),'min:seg de recorrido a 1 m/s')+gradeTile;
+    (ROUTE?stat(fmtT((PATH.L+pl.maxLon)/V),'min:seg de recorrido a 1 m/s'):stat('—','dibuja el recorrido en el visor'))+gradeTile;
   const sh=(svg)=>`<svg width="12" height="12" viewBox="0 0 12 12" style="vertical-align:-1px;margin-right:5px">${svg}</svg>`;
   const it=(icon,txt)=>`<div class="it">${icon}<span>${txt}</span></div>`,swatch=c=>`<span class="sw" style="background:${c}"></span>`;
   $('legend').innerHTML=
@@ -653,7 +662,7 @@ function renderInfo(pl){
     it(swatch('#e86fa5'),'Prekinder (referencia)')+it(swatch('#3a7bd5'),'Nursery (referencia)')+
     it(swatch('#ff2d2d'),'Línea de barra')+it(swatch('rgba(196,35,43,.5)'),'Ruta del desfile')+
     it(swatch('#4aa59a'),'Cancha')+it(swatch('#c98b7a'),'Techo de graderías')+`</div>`;
-  $('parade-sum').innerHTML=`Columna de <b>${pl.maxLon.toFixed(1)} m</b> por <b>≈5.4 m</b> de ancho. Cabeza: Águila, antorcha, pancarta, escudo, LOVE / HONOR / SERVICE y batucada. Luego <b>${pl.rows} filas de familias</b> agrupadas por grado (${pl.GRADES.join(', ')}), con el dragón al medio. La ruta mide ≈${PATH.L.toFixed(0)} m y pasa frente al escenario antes de formar la barra.`;
+  $('parade-sum').innerHTML=`Columna de <b>${pl.maxLon.toFixed(1)} m</b> por <b>≈5.4 m</b> de ancho. Cabeza: Águila, antorcha, pancarta, escudo, LOVE / HONOR / SERVICE y batucada. Luego <b>${pl.rows} filas de familias</b> agrupadas por grado (${pl.GRADES.join(', ')}), con el dragón al medio. ${ROUTE?`El recorrido dibujado mide ≈${PATH.L.toFixed(0)} m.`:'Falta dibujar el recorrido en el visor 3D.'}`;
   const kr=pl.kRowsB.map(r=>r.length),pr=pl.pRowsB.map(r=>r.length);
   if(pl.mode==='columna')$('barra-sum').innerHTML=`La línea de <b>${pl.Lb.toFixed(1)} m</b> la comparten las 3 promociones: <b>Kinder (nosotros, verde)</b>, Prekinder (rosado) y Nursery (azul), cada una en una columna de ${(pl.Lb/3).toFixed(1)} m mirando al jurado. Nuestra columna: escudo, pancarta, Águila y antorcha delante; los 2 que dirigen en las esquinas; LOVE HONOR SERVICE al frente; luego <b>${pl.blocks[0].rows} filas de ${pl.blocks[0].per} familias</b> (${pl.GRADES.join(', ')}), cada hijo entre su papá y su mamá; atrás la batucada y el dragón alzado. Prekinder y Nursery se dibujan solo como referencia.`;
   else if(pl.mode==='grados')$('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela al escenario (Jr. Gregorio Paredes) y mirando al jurado. Delante: escudo, pancarta, Águila, antorcha y los 2 que dirigen. Fila 1: <b>LOVE HONOR SERVICE</b>. Detrás, <b>una columna por grado</b> (${pl.blocks.map(b=>b.g+': '+b.rows+' filas').join(', ')}), lado a lado, de ${(pl.Lb/pl.blocks.length).toFixed(1)} m de ancho cada una: el hijo al centro y sus padres a los costados, como en el desfile. El dragón se alza detrás de todos y la batucada va al costado.`;
@@ -687,7 +696,9 @@ function drawParade(pl){
     const X=lon=>pad+(L1-lon)*k, Y=lat=>cy+lat*k;
     g+=`<rect x="2" y="${top+22}" width="${W0-4}" height="${bh-26}" rx="10" fill="currentColor" fill-opacity=".035"/>`;
     g+=`<text x="12" y="${top+16}" font-size="12" font-weight="600" fill="currentColor">Tramo ${bi+1} · ${L0}–${Math.min(L1,Math.ceil(pl.maxLon))} m desde la cabeza</text>`;
-    if(bi===0)g+=`<text x="${W0-8}" y="${top+16}" font-size="12" text-anchor="end" fill="currentColor">avance →</text>`;
+    // faint chevrons across the band + a solid arrow: everyone walks and looks to the right
+    for(let x=pad+40;x<W0-40;x+=Math.max(120,(W0-80)/5))g+=`<path d="M${x} ${cy-3.4*k} l${k*0.9} ${3.4*k} l${-k*0.9} ${3.4*k}" fill="none" stroke="currentColor" stroke-opacity=".07" stroke-width="${k*0.45}" stroke-linejoin="round"/>`;
+    g+=`<g fill="var(--accent)"><rect x="${W0-118}" y="${top+9}" width="78" height="4" rx="2"/><path d="M${W0-42} ${top+3} l14 8 l-14 8 z"/></g><text x="${W0-124}" y="${top+16}" font-size="11" text-anchor="end" fill="var(--accent)" font-weight="700">miran y avanzan</text>`;
     for(let m=Math.ceil(L0/5)*5;m<L1&&m<=pl.maxLon+0.5;m+=5)g+=`<line x1="${X(m)}" x2="${X(m)}" y1="${top+26}" y2="${top+bh-8}" stroke="currentColor" stroke-opacity=".1"/><text x="${X(m)}" y="${top+bh-10}" font-size="10" text-anchor="middle">${m} m</text>`;
     pl.sections.filter(s=>inB(s.lon)).forEach((s,i)=>g+=`<text x="${X(s.lon)}" y="${top+38+(i%2)*13}" font-size="11" font-weight="600" text-anchor="middle" fill="currentColor">${esc(s.name)}</text>`);
     const dr=pl.P.filter(p=>p.role==='dragon'&&inB(p.lon));
@@ -705,10 +716,14 @@ function drawBarra(pl){
   if(narrow&&ours){minA=ours.al-ours.width/2-0.9;maxA=ours.al+ours.width/2+0.9;} // on a phone show only our column
   const k=Math.min(44,Math.max(12,cw/(maxA-minA)));
   const minD=Math.min(...all.map(b=>b.dp))-1.4,maxD=Math.max(...all.map(b=>b.dp))+0.8;
-  const w=(maxA-minA)*k,h=(maxD-minD)*k+40;
+  const w=(maxA-minA)*k,h=(maxD-minD)*k+64;
   // jury at the top, rows going down
   const X=a=>(maxA-a)*k, Y=d=>(maxD-d)*k+24;
-  let g=`<text x="${X(pl.mid)}" y="${h-4}" font-size="11" text-anchor="middle" fill="currentColor">▼ jurado / escenario (vista desde el jurado)</text>`;
+  let g=`<text x="${w/2}" y="${h-4}" font-size="11" text-anchor="middle" fill="currentColor">jurado / escenario (vista desde el jurado)</text>`;
+  // everyone faces the jury: down in this plan
+  {const cx=X(ours?ours.al:pl.mid),top=Y(maxD-0.3),bot=Y(-0.2);
+   g+=`<path d="M${cx} ${top} L${cx} ${bot}" stroke="var(--accent)" stroke-opacity=".12" stroke-width="${Math.min(60,w*0.12)}"/><path d="M${cx-Math.min(60,w*0.12)} ${bot} l${Math.min(60,w*0.12)} ${Math.min(40,k*1.2)} l${Math.min(60,w*0.12)} ${-Math.min(40,k*1.2)} z" fill="var(--accent)" fill-opacity=".12"/>`;
+   g+=`<g fill="var(--accent)"><rect x="${w/2-2}" y="${h-46}" width="4" height="18" rx="2"/><path d="M${w/2-8} ${h-29} l8 12 l8 -12 z"/></g><text x="${w/2+14}" y="${h-28}" font-size="11" fill="var(--accent)" font-weight="700">miran al jurado</text>`;}
   g+=`<line x1="${X(Math.max(0,minA))}" x2="${X(Math.min(pl.Lb,maxA))}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--accent)" stroke-width="3" opacity=".8"/>`;
   const dr=pl.P.filter(p=>p.role==='dragon').map(p=>p.b);
   if(dr.length)g+=`<polyline points="${dr.map(b=>X(b.al)+','+Y(b.dp)).join(' ')}" stroke="${ROLE.dragon.c}" stroke-width="10" stroke-linecap="round" fill="none" opacity=".4"/>`;
@@ -978,7 +993,7 @@ function buildStatic(){
   {const g=W([(MAP_W/2-MAP_O[0])/MAP_K,(MAP_H/2-MAP_O[1])/MAP_K]);ground.position.set(g.x,0,g.z);}
   const pts=[];for(let s=0;s<=PATH.L;s+=0.5){const q=pathAt(s);pts.push(new THREE.Vector3(q.x,0.05,q.z));}
   routeObj=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),200,0.12,4,false),new THREE.MeshBasicMaterial({color:0xc4232b,transparent:true,opacity:.55}));
-  scene.add(routeObj);
+  routeObj.visible=!!ROUTE;scene.add(routeObj);
   barObj=new THREE.Mesh(new THREE.BoxGeometry(PL.Lb,0.06,0.3),new THREE.MeshBasicMaterial({color:0xff2d2d}));
   barObj.position.set(PL.ctr.x,0.05,PL.ctr.z);barObj.rotation.y=-Math.atan2(PL.u.z,PL.u.x);scene.add(barObj);
   buildSite();
@@ -994,7 +1009,7 @@ function rebuild(){
   $('time').max=PL.tEnd.toFixed(1);
   T=Math.min(T,PL.tEnd);
   const ctr=W(fromWall(0,12));sun.target.position.set(ctr.x,0,ctr.z);sun.position.set(ctr.x-30,60,ctr.z+25);
-  update(T);
+  routeState();update(T);
   if(firstBuild){firstBuild=false;setView(view);}
 }
 let firstBuild=true;
@@ -1058,6 +1073,11 @@ function setView(v){
 // stage 1 = the column walks the route until the head reaches the barra; stage 2 = everyone takes their place
 let stageEnd=null;
 const stageOf=t=>t<PL.tStage2?1:2;
+function routeState(){
+  const none=!ROUTE;$('needroute').hidden=!none||!!drawMode;
+  ['play','st-1','st-2','time'].forEach(id=>{$(id).disabled=none;});
+  if(none){setPlaying(false);T=PL.tEnd;$('time').value=T;}
+}
 function playStage(n){const s=n===1?0:PL.tStage2;T=s;stageEnd=n===1?PL.tStage2:PL.tEnd;$('time').value=T;update(T);
   if(n===1&&view==='jurado')setView('3d');if(n===2&&view==='follow')setView('jurado');setPlaying(true);}
 $('st-1').addEventListener('click',()=>playStage(1));
@@ -1094,11 +1114,11 @@ function setDrawButtons(){
   $('d-route').setAttribute('aria-pressed',String(drawMode==='route'));$('d-bar').setAttribute('aria-pressed',String(drawMode==='bar'));
   $('d-route').textContent=drawMode==='route'?'Terminar ruta':'Dibujar ruta';$('d-bar').textContent=drawMode==='bar'?'Cancelar':'Dibujar barra';
 }
-function startDraw(mode){draft=[];drawMode=mode;setPlaying(false);setView('top');controls.enableRotate=false;setDrawButtons();drawDraft();}
-function cancelDraw(){drawMode=null;draft=[];if(draftObj)scene.remove(draftObj);draftObj=null;controls.enableRotate=true;setDrawButtons();}
+function startDraw(mode){draft=[];drawMode=mode;$('needroute').hidden=true;setPlaying(false);setView('top');controls.enableRotate=false;setDrawButtons();drawDraft();}
+function cancelDraw(){drawMode=null;draft=[];if(draftObj)scene.remove(draftObj);draftObj=null;controls.enableRotate=true;setDrawButtons();if(PL)routeState();}
 function finishDraw(){
   const pts=draft.filter((q,i)=>!i||Math.hypot(q[0]-draft[i-1][0],q[1]-draft[i-1][1])>2).map(q=>[Math.round(q[0]*10)/10,Math.round(q[1]*10)/10]);
-  if(drawMode==='route'&&pts.length>=2){ROUTE=pts;ST.route=pts;}
+  if(drawMode==='route'&&pts.length>=2){ROUTE=pts;ST.route=pts;T=0;}
   if(drawMode==='bar'&&pts.length===2){BARLINE=pts;ST.bar=pts;
     const m=Math.round(Math.hypot(pts[1][0]-pts[0][0],pts[1][1]-pts[0][1])*S*2)/2;$('i-len').value=m;ST.inputs['i-len']=String(m);}
   saveState();cancelDraw();rebuild();
@@ -1110,7 +1130,7 @@ canvas.addEventListener('dblclick',()=>{if(drawMode==='route')finishDraw();});
 addEventListener('keydown',e=>{if(!drawMode)return;if(e.key==='Escape')cancelDraw();if(e.key==='Enter'&&drawMode==='route')finishDraw();});
 $('d-route').addEventListener('click',()=>drawMode==='route'?finishDraw():startDraw('route'));
 $('d-bar').addEventListener('click',()=>drawMode==='bar'?cancelDraw():startDraw('bar'));
-$('d-reset').addEventListener('click',()=>{cancelDraw();delete ST.route;delete ST.bar;ROUTE=ROUTE_PX.map(q=>[...q]);BARLINE=null;$('i-len').value=24;ST.inputs['i-len']='24';saveState();rebuild();});
+$('d-reset').addEventListener('click',()=>{cancelDraw();delete ST.route;delete ST.bar;ROUTE=null;BARLINE=null;$('i-len').value=24;ST.inputs['i-len']='24';saveState();rebuild();});
 // keep the moment and the camera too
 const HELP_CTX={
   general:'',
@@ -1175,6 +1195,7 @@ $('fam-list').value=store.get('desfile-familias-v3')||sampleFamilies();
 $('fam-list').addEventListener('input',e=>store.set('desfile-familias-borrador',e.target.value));
 FAMS=parseFamilies(store.get('desfile-familias-v3')||sampleFamilies());
 T=typeof ST.T==='number'?ST.T:60;if(ST.view)view=ST.view;
+$('need-draw').addEventListener('click',()=>startDraw('route'));
 overMsg();
 rebuild();resize();
 // #barra opens on the finished formation seen from the jury
