@@ -428,7 +428,7 @@ ST.over=ST.over||{};ST.inputs=ST.inputs||{};
 function saveNow(){try{localStorage.setItem(STATE_KEY,JSON.stringify(ST))}catch(e){}}
 let saveTimer;function saveState(){clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,250);}
 // default route and barra line (plan pixels); a route drawn in this browser wins
-const DEFAULT_ROUTE=null, DEFAULT_BAR=null;
+const DEFAULT_ROUTE=[[615.4,372],[647.7,330.7],[528.8,243.5],[547,195.5],[461.4,131.2],[421.3,176.7]], DEFAULT_BAR=null;
 let ROUTE=ST.route&&ST.route.length>1?ST.route:DEFAULT_ROUTE&&DEFAULT_ROUTE.map(q=>[...q]);
 let BARLINE=ST.bar&&ST.bar.length===2?ST.bar:DEFAULT_BAR&&DEFAULT_BAR.map(q=>[...q]);
 const pkey=p=>p.kid?`${p.fam}:h${p.idx}`:`${p.fam}:${p.g}`;
@@ -1191,8 +1191,12 @@ function routeState(){
   if(none){setPlaying(false);T=PL.tEnd;$('time').value=T;}
 }
 // three moments: the parade column formed (still), the transition (animated) and the barra (still)
+// frame the whole route so the parade column is in view
+function frameRoute(){if(!ROUTE)return;const w=ROUTE.map(W),cx=w.reduce((a,q)=>a+q.x,0)/w.length,cz=w.reduce((a,q)=>a+q.z,0)/w.length;
+  view='3d';['top','3d','follow','jurado'].forEach(k=>$('v-'+k).setAttribute('aria-pressed',String(k==='3d')));controls.enabled=true;
+  camera.position.set(cx-NORTH.x*30-EAST.x*16,30,cz-NORTH.z*30-EAST.z*16);controls.target.set(cx,0,cz);controls.update();}
 function showMoment(n){setPlaying(false);stageEnd=null;T=n===1?PL.tInit:PL.tEnd;$('time').value=T;update(T);
-  if(n===1&&(view==='jurado'||view==='follow'))setView('3d');if(n===2&&view==='follow')setView('jurado');}
+  if(n===1&&view!=='top')frameRoute();if(n===2&&view==='follow')setView('jurado');}
 function playStage(n){showMoment(n);}
 $('st-1').addEventListener('click',()=>playStage(1));
 $('st-2').addEventListener('click',()=>playStage(2));
@@ -1331,6 +1335,7 @@ rebuild();resize();
 // #barra opens on the finished formation seen from the jury
 if(location.hash==='#barra'){T=PL.tEnd;update(T);setView('jurado');}
 if(location.hash==='#aerea'){T=PL.tEnd;update(T);setView('top');}
+if(location.hash==='#desfile'&&ROUTE){T=PL.tInit;update(T);frameRoute();}
 $('time').value=T;
 document.fonts&&document.fonts.ready.then(()=>{rebuild();});
 requestAnimationFrame(loop);
