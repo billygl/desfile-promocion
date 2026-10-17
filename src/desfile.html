@@ -1134,8 +1134,9 @@ function rebuild(){
   PL.P.forEach(p=>{p.obj=makePerson(p);peopleGroup.add(p.obj);});
   scene.add(peopleGroup);
   if(typeof applyLayers==='function')applyLayers();
-  $('time').max=PL.tEnd.toFixed(1);
-  T=Math.min(T,PL.tEnd);
+  // the timeline starts at the parade formation (0:00) and ends with the barra formed
+  $('time').min=PL.tInit.toFixed(1);$('time').max=PL.tEnd.toFixed(1);
+  T=Math.max(PL.tInit,Math.min(T,PL.tEnd));
   const ctr=W(fromWall(0,12));sun.target.position.set(ctr.x,0,ctr.z);sun.position.set(ctr.x-30,60,ctr.z+25);
   routeState();update(T);
   if(firstBuild){firstBuild=false;setView(view);}
@@ -1182,7 +1183,7 @@ function update(t){
   {const atI=!playing&&Math.abs(t-PL.tInit)<0.05,atF=!playing&&t>=PL.tEnd-0.05;$('st-1').setAttribute('aria-pressed',String(atI));$('st-2').setAttribute('aria-pressed',String(atF));}
   if(promoGroup)promoGroup.visible=arrived===PL.P.length;
   if(!drawMode)$('phase').textContent=(!playing&&Math.abs(t-PL.tInit)<0.05?'Inicio · columna del desfile':(arrived===PL.P.length?'Barra lista · ¡a cantar!':arrived>0?`Formando barra · ${arrived}/${PL.P.length}`:started===0?'Ingreso':`Desfile · ${started}/${PL.P.length} en ruta`));
-  $('tlabel').textContent=fmtT(t);
+  $('tlabel').textContent=fmtT(t-PL.tInit);
   if(view==='follow'){const h=PL.P.reduce((m,p)=>p.lon<m.lon?p:m).q;
     controls.target.lerp(new THREE.Vector3(h.x,1,h.z),0.08);camera.position.lerp(new THREE.Vector3(h.x-h.fx*16+6,13,h.z-h.fz*16+6),0.05);}
 }
