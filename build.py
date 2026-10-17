@@ -26,7 +26,7 @@ if "--home" in sys.argv:
         root.parent / "greens2037-home",
         root.parent / "home-site",
     ]
-    site = next((c for c in candidates if (c / ".git").exists()), candidates[0])
+    site = next((c for c in candidates if (c / ".git").exists()), candidates[0] if len(candidates) == 1 else root.parent / "greens2037-home")
     if not (site / ".git").exists():
         sys.exit(f"No encuentro el repo del sitio en {site.resolve()}.\n"
                  f"Clónalo ahí:  git clone https://github.com/billygl/greens2037-home.git \"{site.resolve()}\"\n"

@@ -20,8 +20,6 @@ Publicada en https://greens2037.website/desfile/
 
 ## Despliegue (dos repos)
 
-Necesita esta estructura de carpetas:
-
 `build.py --home` encuentra el repo del sitio en cualquiera de estas dos estructuras:
 
 ```
