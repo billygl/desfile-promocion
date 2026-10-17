@@ -421,7 +421,7 @@ function plan(c,fams){
   const lseq=[];WORDS.forEach((w,wi)=>{if(wi)lseq.push(null);for(const ch of w)lseq.push(ch);});
   const lg=0.62;
   let lq=[...letters];
-  lseq.forEach((ch,j)=>{if(!ch)return;const p=lq.shift();if(p)p.b=at(mid+(j-(lseq.length-1)/2)*lg,dp,rowNo);});
+  lseq.forEach((ch,j)=>{if(!ch)return;const p=lq.shift();if(p)p.b=at(mid+((lseq.length-1)/2-j)*lg,dp,rowNo);});
   if(letters.length){dp+=0.75;rowNo++;}
   function rowsOf(n,gap,cap){
     const nr=n?Math.max(1,Math.ceil(n/cap)):0,rs=[];let left=n;
@@ -513,16 +513,16 @@ function drawBarra(pl){
   const k=40,all=pl.P.map(p=>p.b);
   const minA=Math.min(0,...all.map(b=>b.al))-1,maxA=Math.max(pl.Lb,...all.map(b=>b.al))+1;
   const minD=Math.min(...all.map(b=>b.dp))-1.4,maxD=Math.max(...all.map(b=>b.dp))+0.8;
-  const w=(maxA-minA)*k,h=(maxD-minD)*k+16;
+  const w=(maxA-minA)*k,h=(maxD-minD)*k+22;
   // jury at the top, rows going down
-  const X=a=>(a-minA)*k, Y=d=>(d-minD)*k+16;
-  let g=`<text x="${X(pl.mid)}" y="12" font-size="11" text-anchor="middle" fill="currentColor">▲ jurado / escenario</text>`;
+  const X=a=>(maxA-a)*k, Y=d=>(maxD-d)*k+6;
+  let g=`<text x="${X(pl.mid)}" y="${h-4}" font-size="11" text-anchor="middle" fill="currentColor">▼ jurado / escenario (vista desde el jurado)</text>`;
   g+=`<line x1="${X(0)}" x2="${X(pl.Lb)}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--accent)" stroke-width="3" opacity=".8"/>`;
-  g+=`<text x="${X(0)}" y="${Y(0)-4}" font-size="9">línea ${pl.Lb.toFixed(1)} m</text>`;
+  g+=`<text x="${X(0)}" y="${Y(0)+12}" font-size="9" text-anchor="end">línea ${pl.Lb.toFixed(1)} m</text>`;
   const dr=pl.P.filter(p=>p.role==='dragon').map(p=>p.b);
   if(dr.length)g+=`<polyline points="${dr.map(b=>X(b.al)+','+Y(b.dp)).join(' ')}" stroke="${ROLE.dragon.c}" stroke-width="10" stroke-linecap="round" fill="none" opacity=".4"/>`;
   const pa=pl.P.filter(p=>p.role==='pancarta').map(p=>p.b);
-  if(pa.length)g+=`<line x1="${X(Math.min(...pa.map(b=>b.al)))-8}" x2="${X(Math.max(...pa.map(b=>b.al)))+8}" y1="${Y(pa[0].dp)-9}" y2="${Y(pa[0].dp)-9}" stroke="${ROLE.pancarta.c}" stroke-width="4" opacity=".6"/>`;
+  if(pa.length)g+=`<line x1="${X(Math.min(...pa.map(b=>b.al)))-8}" x2="${X(Math.max(...pa.map(b=>b.al)))+8}" y1="${Y(pa[0].dp)+9}" y2="${Y(pa[0].dp)+9}" stroke="${ROLE.pancarta.c}" stroke-width="4" opacity=".6"/>`;
   pl.P.forEach(p=>g+=dot(X(p.b.al),Y(p.b.dp),p,p.kid?5:6.5,true));
   const s=$('svg-barra');s.setAttribute('viewBox',`0 0 ${w} ${h}`);s.style.color='var(--fg)';s.innerHTML=g;
 }
@@ -592,43 +592,72 @@ const shieldTex=canvasTex(256,300,(x,w,h)=>{
   x.fillStyle='#f4d35e';x.font='800 64px "Bricolage Grotesque", sans-serif';x.textAlign='center';x.fillText('MA',w/2,130);
   x.font='700 22px "Atkinson Hyperlegible", sans-serif';x.fillStyle='#ffffff';x.fillText('LOVE · HONOR',w/2,180);x.fillText('SERVICE',w/2,206);});
 
+const soccerTex=canvasTex(256,128,(x,w,h)=>{x.fillStyle='#ffffff';x.fillRect(0,0,w,h);x.fillStyle='#111111';
+  [[32,30],[96,30],[160,30],[224,30],[0,72],[64,72],[128,72],[192,72],[256,72],[32,112],[96,112],[160,112],[224,112]].forEach(([cx,cy])=>{x.beginPath();for(let k=0;k<5;k++){const a=k*1.2566-1.57;x.lineTo(cx+Math.cos(a)*15,cy+Math.sin(a)*13);}x.fill();});});
+function soccer(r,x,y,z){const m=new THREE.Mesh(G.ball,new THREE.MeshStandardMaterial({map:soccerTex,roughness:.4}));m.scale.setScalar(r);m.position.set(x,y,z);m.castShadow=true;return m;}
+// a string of balloons from a to b
+function chain(g,c,a,b,n,r){for(let i=0;i<n;i++){const k=n>1?i/(n-1):0;g.add(ball(Array.isArray(c)?c[i%c.length]:c,r,a[0]+(b[0]-a[0])*k,a[1]+(b[1]-a[1])*k,a[2]+(b[2]-a[2])*k));}}
+// balloons covering an ellipsoid
+function cluster(g,c,cx,cy,cz,rx,ry,rz,n,r){g.add(mesh(G.ball,Array.isArray(c)?c[0]:c,rx*0.9,ry*0.9,rz*0.9,cx,cy,cz));
+  for(let i=0;i<n;i++){const y=1-2*(i+0.5)/n,rad=Math.sqrt(1-y*y),a=i*2.39996;g.add(ball(Array.isArray(c)?c[i%c.length]:c,r*(0.8+((i*7)%5)/10),cx+Math.cos(a)*rad*rx,cy+y*ry,cz+Math.sin(a)*rad*rz));}}
+const starTex=canvasTex(128,150,(x,w,h)=>{x.beginPath();x.moveTo(10,10);x.lineTo(w-10,10);x.lineTo(w-10,80);x.quadraticCurveTo(w-10,130,w/2,h-6);x.quadraticCurveTo(10,130,10,80);x.closePath();
+  x.fillStyle='#2d6fb5';x.fill();x.lineWidth=8;x.strokeStyle='#ffffff';x.stroke();x.fillStyle='#ffffff';x.beginPath();
+  for(let k=0;k<10;k++){const a=k*Math.PI/5-Math.PI/2,rr=k%2?14:34;x.lineTo(w/2+Math.cos(a)*rr,70+Math.sin(a)*rr);}x.fill();});
 function makePerson(p){
   const g=new THREE.Group();
   const h=p.kid?1.25:1.68;
   const shirt=p.role==='padre'?(p.g==='mama'?'#5b8fc7':ROLE.padre.c):p.role==='nino'?ROLE.nino.c:ROLE[p.role].c;
-  if(p.g==='mama'){
+  if(p.role==='aguila'){}
+  else if(p.g==='mama'){
     g.add(mesh(G.dress,shirt,1,h*0.78,1,0,h*0.39,0));
     g.add(mesh(G.ball,'#3b2618',0.17,0.2,0.15,0,h*0.78+0.11,-0.05));
   }else{
     g.add(mesh(G.body,shirt,p.kid?0.8:1.08,h*0.78,p.kid?0.8:1.08,0,h*0.39,0));
     if(!p.kid)g.add(mesh(G.ball,'#2a1d14',0.15,0.08,0.15,0,h*0.78+0.22,0));
   }
-  g.add(ball('#c99069',p.kid?0.13:0.145,0,h*0.78+0.13,0));
+  if(p.role!=='aguila')g.add(ball('#c99069',p.kid?0.13:0.145,0,h*0.78+0.13,0));
   const R=p.role;
   if(R==='aguila'){
-    g.add(mesh(G.ball,'#7b4a22',0.55,0.75,0.5,0,1.45,0),ball('#f5f1e6',0.3,0,2.3,0.05));
-    const bk=mesh(G.cone,'#f2b705',0.1,0.28,0.1,0,2.25,0.36);bk.rotation.x=Math.PI/2;g.add(bk);
-    [-1,1].forEach(s=>{const w=mesh(G.ball,'#5b3416',1.1,0.13,0.42,s*1.05,1.85,0);w.rotation.z=s*0.35;g.add(w);g.add(ball('#111',0.05,s*0.12,2.36,0.26));});
+    // balloon eagle from the reference: yellow feet, green body, brown wings, white head, yellow mask
+    [-1,1].forEach(s=>{chain(g,'#f2c919',[s*0.18,0.15,0],[s*0.2,0.65,0],4,0.11);
+      for(let k=-1;k<=1;k++){g.add(ball('#f2c919',0.08,s*0.2+k*0.1,0.08,0.16));const cl=mesh(G.cone,'#ffffff',0.03,0.12,0.03,s*0.2+k*0.1,0.05,0.28);cl.rotation.x=Math.PI/2;g.add(cl);}});
+    cluster(g,['#1f8a3a','#2aa84a','#178032'],0,1.15,0,0.42,0.45,0.36,46,0.11);
+    [-1,1].forEach(s=>{chain(g,['#4a2b17','#5b3416'],[s*0.5,1.5,0],[s*0.58,0.85,0.02],7,0.11);
+      const st=stick('#f2c919',0.55,s*0.13,1.12,0.37,0.02);st.rotation.z=s*0.6;g.add(st);});
+    const badge=new THREE.Mesh(new THREE.PlaneGeometry(0.2,0.24),new THREE.MeshStandardMaterial({map:starTex,transparent:true}));badge.position.set(0,1.05,0.38);g.add(badge);
+    cluster(g,'#ffffff',0,1.95,0,0.36,0.34,0.32,30,0.09);
+    g.add(mesh(G.ball,'#f2c919',0.3,0.18,0.12,0,2.02,0.26));
+    const bk=mesh(G.cone,'#f2c919',0.11,0.3,0.11,0,1.9,0.42);bk.rotation.x=Math.PI/2+0.5;g.add(bk);
+    [-1,1].forEach(s=>{g.add(ball('#1e4fd6',0.075,s*0.12,2.05,0.34),ball('#111111',0.035,s*0.12,2.05,0.41));
+      const br=mesh(G.ball,'#f2c919',0.16,0.04,0.05,s*0.13,2.16,0.33);br.rotation.z=-s*0.35;g.add(br);});
+    for(let k=0;k<5;k++)g.add(ball('#ffffff',0.07,(k-2)*0.08,2.3,0.05));
   }else if(R==='antorcha'){
     g.add(stick('#c9a227',0.9,0.24,0.9,0.15,0.04));
     const cup=mesh(G.cone,'#c9a227',0.14,0.25,0.14,0.24,1.9,0.15);cup.rotation.x=Math.PI;g.add(cup);
     g.add(mesh(G.cone,'#ff7b00',0.13,0.55,0.13,0.24,2.28,0.15,1),ball('#ffd23f',0.09,0.24,2.12,0.15,1));
   }else if(R==='baston'){
     g.add(stick('#ffffff',1.5,0.22,0.6,0.12));
-    for(let i=0;i<4;i++)g.add(ball(BALLOON[i],0.1,0.22+Math.cos(i*1.6)*0.07,2.05+i*0.13,0.12+Math.sin(i*1.6)*0.07));
+    for(let i=0;i<5;i++)g.add(ball(['#2aa84a','#c9a227','#111111'][i%3],0.1,0.22+Math.cos(i*1.6)*0.07,2.05+i*0.12,0.12+Math.sin(i*1.6)*0.07));
   }else if(R==='letra'){
     const b=letterBoard(p.letter||'?');b.position.set(0,1.05,0.28);g.add(b);
   }else if(R==='escudo'){
     const s=new THREE.Mesh(new THREE.PlaneGeometry(0.75,0.88),new THREE.MeshStandardMaterial({map:shieldTex,transparent:true,side:THREE.DoubleSide}));
     s.position.set(0,1.15,0.3);s.castShadow=true;g.add(s);
   }else if(R==='muneco'){
-    g.add(stick('#ddd',2.2,0.26,0.6,0.1));
-    g.add(mesh(G.ball,'#b5179e',0.32,0.42,0.28,0.26,3.05,0.1),ball('#fde2c8',0.22,0.26,3.6,0.1));
-    [-1,1].forEach(s=>g.add(mesh(G.ball,'#ff9fd0',0.28,0.09,0.09,0.26+s*0.38,3.15,0.1)));
-    g.add(ball('#3a86ff',0.12,0.15,2.7,0.1),ball('#3a86ff',0.12,0.37,2.7,0.1));
+    // balloon doll from the reference: white face, gold crown, green body with black and gold bands
+    g.add(stick('#ddd',1.5,0.3,0.6,0.15));
+    const d=new THREE.Group();d.position.set(0.3,2.05,0.15);d.scale.setScalar(0.85);
+    [-1,1].forEach(s=>{chain(d,'#2aa84a',[s*0.18,0.75,0],[s*0.55,0,0],6,0.11);chain(d,'#2aa84a',[s*0.3,1.35,0],[s*0.75,0.95,0],4,0.11);
+      d.add(soccer(0.13,s*0.85,0.9,0));});
+    [[0.85,'#2aa84a'],[1.0,'#111111'],[1.12,'#c9a227'],[1.25,'#2aa84a'],[1.38,'#2aa84a']].forEach(([y,c])=>{for(let k=-1;k<=1;k+=2)d.add(ball(c,0.13,k*0.12,y,0));});
+    d.add(ball('#ffffff',0.32,0,1.78,0));
+    [-1,1].forEach(s=>d.add(ball('#2f9e5b',0.05,s*0.1,1.83,0.29),ball('#e05a5a',0.04,s*0.17,1.72,0.27)));
+    const cr=mesh(G.stick,'#c9a227',0.22,0.18,0.22,0,2.12,0);d.add(cr);
+    [-1,1].forEach(s=>d.add(mesh(G.ball,'#2aa84a',0.12,0.06,0.05,s*0.08,2.08,0.22)));
+    g.add(d);
   }else if(R==='pompon'){
     g.add(stick('#ddd',1.9,0.26,0.6,0.1));
-    for(let i=0;i<10;i++){const a=i*2.4,y=Math.cos(i*0.9)*0.25;g.add(ball(['#18a5b5','#ffffff','#f4d35e'][i%3],0.2,0.26+Math.cos(a)*0.28,2.75+y,0.1+Math.sin(a)*0.28));}
+    for(let i=0;i<12;i++){const a=i*2.4,y=Math.cos(i*0.9)*0.25;g.add(ball(['#2aa84a','#c9a227','#ffffff','#111111'][i%4],0.2,0.26+Math.cos(a)*0.3,2.75+y,0.1+Math.sin(a)*0.3));}
   }else if(R==='bat'){
     g.add(mesh(G.stick,'#c23b5a',0.24,0.3,0.24,0,0.95,0.3),mesh(G.stick,'#f4f4f4',0.245,0.02,0.245,0,1.11,0.3));
   }else if(R==='direccion'){
@@ -637,7 +666,7 @@ function makePerson(p){
     g.add(stick('#8b5a2b',2.4,0,0.6,0.3,0.03));
   }
   const lab=labelSprite(label3d(p),ROLE[p.role].c,p.kid?0.85:1);
-  lab.position.set(0,R==='muneco'?4.05:R==='aguila'?2.85:h+0.45,0);lab.name='code';
+  lab.position.set(0,R==='muneco'?4.4:R==='aguila'?2.85:h+0.45,0);lab.name='code';
   lab.visible=$('i-codes').checked;g.add(lab);
   g.traverse(o=>{if(o.isMesh)o.castShadow=true;});
   return g;
@@ -645,12 +674,18 @@ function makePerson(p){
 
 // Dragon + banner are drawn between their carriers each frame
 const dragon=new THREE.Group();scene.add(dragon);
-const DSEG=20,dSegs=[];
-for(let i=0;i<DSEG;i++){const m=ball(i%2?'#2f9e5b':'#45c27a',1,0,0,0);dSegs.push(m);dragon.add(m);}
+const DSEG=26,dSegs=[];
+for(let i=0;i<DSEG;i++){const m=ball(['#1f8a3a','#7fd67a','#2aa84a','#9be08f'][i%4],1,0,0,0);dSegs.push(m);dragon.add(m);}
 const dHead=new THREE.Group();
-dHead.add(ball('#d62828',0.36,0,0,0),mesh(G.ball,'#d62828',0.22,0.18,0.3,0,-0.05,0.32),ball('#ffd23f',0.08,0.15,0.15,0.25,1),ball('#ffd23f',0.08,-0.15,0.15,0.25,1));
-[-1,1].forEach(s=>{const h=mesh(G.cone,'#f4d35e',0.06,0.3,0.06,s*0.18,0.35,-0.05);h.rotation.x=-0.4;dHead.add(h);});
-dragon.add(dHead);
+cluster(dHead,['#1f8a3a','#2aa84a'],0,0,0,0.42,0.36,0.42,34,0.1);
+dHead.add(mesh(G.ball,'#2aa84a',0.3,0.24,0.34,0,-0.06,0.38));
+for(let k=-2;k<=2;k++)dHead.add(ball('#ffffff',0.045,k*0.07,-0.22,0.6));
+[-1,1].forEach(s=>{dHead.add(ball('#c9a227',0.13,s*0.2,0.22,0.3),ball('#9be08f',0.08,s*0.17,0.12,0.4),ball('#111111',0.035,s*0.17,0.12,0.47));
+  for(let k=0;k<3;k++){const w=stick('#111111',0.7,s*0.3,0.1+k*0.08,-0.1,0.025);w.rotation.z=-s*(0.9+k*0.25);w.rotation.x=-0.4;dHead.add(w);}
+  const ms=stick('#c9a227',0.5,s*0.22,-0.05,0.55,0.03);ms.rotation.z=s*1.2;dHead.add(ms);});
+dHead.add(ball('#c9a227',0.13,0,0.05,0.68),soccer(0.15,0,-0.2,0.7));
+dHead.scale.setScalar(1.15);
+dragon.add(dHead);dragon.add(dHead);
 const bannerTex=()=>canvasTex(1024,256,(x)=>{
   x.fillStyle='#ffffff';x.fillRect(0,0,1024,256);x.fillStyle='#7a4fa0';x.fillRect(0,0,1024,26);x.fillRect(0,230,1024,26);
   x.fillStyle='#c4232b';x.font='800 92px "Bricolage Grotesque", sans-serif';x.textAlign='center';x.textBaseline='middle';
@@ -760,7 +795,7 @@ function update(t){
     const fw=a.clone().sub(b).normalize(),bw=c.clone().sub(b).normalize();
     const curve=new THREE.CatmullRomCurve3([a.clone().addScaledVector(fw,0.35),a,b,c,c.clone().addScaledVector(bw,0.5)]);
     for(let i=0;i<DSEG;i++){const u=0.04+i/(DSEG-1)*0.96,pt=curve.getPoint(u);
-      dSegs[i].position.set(pt.x,pt.y+Math.sin(clock*3-i*0.6)*0.18,pt.z);dSegs[i].scale.setScalar(0.3*(1-u*0.65));}
+      dSegs[i].position.set(pt.x,pt.y+Math.sin(clock*3-i*0.6)*0.18,pt.z);dSegs[i].scale.setScalar(0.42*(1-u*0.55));}
     const hp=curve.getPoint(0);dHead.position.set(hp.x,hp.y+Math.sin(clock*3+0.6)*0.18+0.05,hp.z);
     dHead.rotation.y=Math.atan2(fw.x,fw.z);
   }
@@ -816,6 +851,8 @@ $('fam-list').value=store.get('desfile-familias-v3')||sampleFamilies();
 FAMS=parseFamilies($('fam-list').value);
 T=60;
 rebuild();resize();
+// #barra opens on the finished formation seen from the jury
+if(location.hash==='#barra'){T=PL.tEnd;update(T);setView('jurado');}
 $('time').value=T;
 document.fonts&&document.fonts.ready.then(()=>{rebuild();});
 requestAnimationFrame(loop);
