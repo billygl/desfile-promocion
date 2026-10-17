@@ -179,6 +179,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
         <div class="seg tools" role="group" aria-label="Dibujar">
           <button id="d-route" aria-pressed="false">Dibujar ruta</button>
           <button id="d-bar" aria-pressed="false">Dibujar barra</button>
+          <button id="d-undo" hidden>Deshacer punto</button>
           <button id="d-reset">Borrar líneas</button>
         </div>
         <div class="phase" id="phase">Ingreso</div>
@@ -288,7 +289,8 @@ const ROLE={
   dragon:{c:'#c9a227',n:'Dragón 5 m (3 cargan)'},
   muneco:{c:'#b5179e',n:'Muñeco'},
   pompon:{c:'#18a5b5',n:'Pompón supremo'},
-  baston:{c:'#f08a24',n:'Bastón'}
+  baston:{c:'#f08a24',n:'Bastón'},
+  miss:{c:'#6d28d9',n:'Miss (profesora)'}
 };
 const KID_ROLES=['antorcha','baston','letra','escudo'];
 const DETACHED=['aguila','pancarta','bat','dragon'];
@@ -440,6 +442,10 @@ function plan(c,fams){
   att.forEach(f=>{f.par=[];f.kid=[];
     f.genders.forEach((g,i)=>{const p=add('padre',f,false,i+1);p.g=g;f.par.push(p);});
     for(let i=0;i<f.kids;i++){const k=add('nino',f,true,i+1);k.grade=f.grades[i]||f.grades[0]||'Promo';f.kid.push(k);}});
+  // 6 misses (teachers), 2 per grade; they walk and stand with their grade
+  const gradesAll=[...new Set(P.filter(p=>p.kid).map(p=>p.grade))].sort();
+  const missF={code:'Miss',kids:0,kid:[],par:[],genders:[]};
+  for(let i=0;i<6;i++){const m=add('miss',missF,false,i+1);m.g='mama';m.grade=gradesAll[Math.floor(i/2)%Math.max(1,gradesAll.length)]||'Promo';}
   // manual assignments from the table win over everything else
   P.forEach(p=>{const o=ST.over[pkey(p)];if(!o)return;p.lock=true;if(o!=='libre'&&ROLE[o])p.role=o;});
   const count=r=>P.filter(p=>p.role===r).length;
@@ -529,6 +535,7 @@ function plan(c,fams){
     if(gi===Math.floor(GRADES.length/2)&&gi>0&&drs.length){sections.push({name:'Dragón',lon});drs.forEach((p,j)=>put(p,0,lon+j*2.4));lon+=(drs.length-1)*2.4+1.6;}
     const gr=rows.filter(r=>r.g===g);
     sections.push({name:`${g} · ${gr.length} filas`,lon});
+    by('miss').filter(m=>m.grade===g).forEach((m,j)=>put(m,j%2?3.4:-3.4,lon+(gi===0?1.2:0)));
     gr.forEach(row=>{row.set=put;placeRow(row,lon,{outer:2.25,inner:1.35,kid:0.45});lon+=ROW;});
     lon+=0.6;
   });
@@ -594,6 +601,7 @@ function plan(c,fams){
     const per=Math.max(2,Math.floor((bs-0.4)/1.5));
     let nRows=0;
     for(let i=0;i<us.length;i+=per,nRows++){const dd=dp0+nRows*0.75;maxDp=dd;
+      us.slice(i,i+per).forEach(u=>{by('miss').filter(m=>m.grade===u.g&&!m.b).slice(0,2).forEach((m,j)=>put2(m,(j%2?1:-1)*(bs/2+0.05),dd,'M',{blk:'col',r:nRows+1}));});
       us.slice(i,i+per).forEach((u,j,arr)=>{const cx=(j-(arr.length-1)/2)*1.5,tag={blk:'col',r:nRows+1};
         u.kids.forEach((k,m)=>put2(k,cx+(m-(u.kids.length-1)/2)*0.4,dd,'R'+(nRows+1),tag));
         const sp=u.kids.length>1?0.65:0.5;
@@ -609,7 +617,7 @@ function plan(c,fams){
   const kGap=0.55;kRowsB=rowsOf(kidList.length,kGap,Math.max(4,Math.floor(Lb/kGap)+1));
   kRowsB.flat().forEach((s,i)=>{kidList[i].b=s;});
   const famAl={};
-  att.forEach(f=>{const ks=f.kid.filter(k=>k.b&&k.b.row!=='D');famAl[f.code]=ks.length?ks.reduce((a,k)=>a+k.b.al,0)/ks.length:mid;});
+  att.forEach(f=>{const ks=f.kid.filter(k=>k.b&&k.b.row!=='D');famAl[f.code]=ks.length?ks.reduce((a,k)=>a+k.b.al,0)/ks.length:mid;});famAl.Miss=mid;
   const parList=P.filter(p=>!p.b);
   dp+=0.15;
   const pGap=0.6;pRowsB=rowsOf(parList.length,pGap,Math.max(4,Math.floor(Lb/pGap)+1));
@@ -644,7 +652,7 @@ function renderInfo(pl){
   const gradeTile=pl.mode==='columna'?stat('1 × '+pl.blocks[0].rows+' filas',`barra: columna de ${(pl.Lb/3).toFixed(1)} m × ${pl.blocks[0].depth.toFixed(0)} m de fondo`):stat(nRowsB+' filas','barra, + escudo y pancarta delante');
   const pct=Math.round(100*pl.att.length/pl.fams.length),est=pl.fams.some(f=>f.est);
   $('stats').innerHTML=
-    stat(pl.P.length,'personas')+stat(pl.att.length+' / '+pl.fams.length,'familias asisten ('+pct+'%'+(est?', estimado':'')+')')+stat(pl.kids,'niños')+stat(pl.parents,'padres y madres')+
+    stat(pl.P.length,'personas (con las 6 misses)')+stat(pl.att.length+' / '+pl.fams.length,'familias asisten ('+pct+'%'+(est?', estimado':'')+')')+stat(pl.kids,'niños')+stat(pl.parents-6,'padres y madres')+
     stat('6 × '+pl.rows,'columnas × filas de familias')+stat(pl.maxLon.toFixed(0)+' m','largo de la columna')+
     (ROUTE?stat(fmtT((PATH.L+pl.maxLon)/V),'min:seg de recorrido a 1 m/s'):stat('—','dibuja el recorrido en el visor'))+gradeTile;
   const sh=(svg)=>`<svg width="12" height="12" viewBox="0 0 12 12" style="vertical-align:-1px;margin-right:5px">${svg}</svg>`;
@@ -657,6 +665,12 @@ function renderInfo(pl){
     it('<span class="mono" style="white-space:nowrap;min-width:46px">pa / ma</span>','junto al código: papá o mamá que tiene un rol')+`</div>`+
     `<div class="lg"><h3>Qué lleva</h3>`+
     Object.entries(ABBR).map(([k,a])=>it(`<span class="chip" style="background:${ROLE[k].c}">${k==='letra'?'L·O':a}</span>`,ROLE[k].n)).join('')+`</div>`+
+    `<div class="lg"><h3>Cómo moverte en el 3D</h3>`+
+    it('<span class="chip" style="background:var(--fg);color:var(--bg)">1 dedo</span>','arrastrar: girar la cámara')+
+    it('<span class="chip" style="background:var(--fg);color:var(--bg)">2 dedos</span>','pellizcar: acercar o alejar · arrastrar: mover el plano')+
+    it('<span class="chip" style="background:var(--fg);color:var(--bg)">Mouse</span>','arrastrar: girar · rueda: zoom · clic derecho o Shift + arrastrar: mover')+
+    it('<span class="chip" style="background:var(--fg);color:var(--bg)">Dibujar</span>','toca el plano para agregar puntos; 1 dedo ya no gira, 2 dedos siguen moviendo y haciendo zoom. «Deshacer punto» quita el último; «Terminar ruta» cierra')+
+    it('<span class="chip" style="background:var(--fg);color:var(--bg)">Teclas</span>','L leyenda · C configuración · Esc cerrar o cancelar · Ctrl+Z deshacer punto')+`</div>`+
     `<div class="lg"><h3>En el 3D</h3>`+
     it(swatch(ROLE.padre.c),'Papá (polo verde oscuro)')+it(swatch('#3f9a58'),'Mamá (polo verde medio, vestido)')+it(swatch(ROLE.nino.c),'Niño o niña (polo verde claro)')+
     it(swatch('#e86fa5'),'Prekinder (referencia)')+it(swatch('#3a7bd5'),'Nursery (referencia)')+
@@ -664,15 +678,15 @@ function renderInfo(pl){
     it(swatch('#4aa59a'),'Cancha')+it(swatch('#c98b7a'),'Techo de graderías')+`</div>`;
   $('parade-sum').innerHTML=`Columna de <b>${pl.maxLon.toFixed(1)} m</b> por <b>≈5.4 m</b> de ancho. Cabeza: Águila, antorcha, pancarta, escudo, LOVE / HONOR / SERVICE y batucada. Luego <b>${pl.rows} filas de familias</b> agrupadas por grado (${pl.GRADES.join(', ')}), con el dragón al medio. ${ROUTE?`El recorrido dibujado mide ≈${PATH.L.toFixed(0)} m.`:'Falta dibujar el recorrido en el visor 3D.'}`;
   const kr=pl.kRowsB.map(r=>r.length),pr=pl.pRowsB.map(r=>r.length);
-  if(pl.mode==='columna')$('barra-sum').innerHTML=`La línea de <b>${pl.Lb.toFixed(1)} m</b> la comparten las 3 promociones: <b>Kinder (nosotros, verde)</b>, Prekinder (rosado) y Nursery (azul), cada una en una columna de ${(pl.Lb/3).toFixed(1)} m mirando al jurado. Nuestra columna: escudo, pancarta, Águila y antorcha delante; los 2 que dirigen en las esquinas; LOVE HONOR SERVICE al frente; luego <b>${pl.blocks[0].rows} filas de ${pl.blocks[0].per} familias</b> (${pl.GRADES.join(', ')}), cada hijo entre su papá y su mamá; atrás la batucada y el dragón alzado. Prekinder y Nursery se dibujan solo como referencia.`;
+  if(pl.mode==='columna')$('barra-sum').innerHTML=`La línea de <b>${pl.Lb.toFixed(1)} m</b> la comparten las 3 promociones: <b>Kinder (nosotros, verde)</b>, Prekinder (rosado) y Nursery (azul), cada una en una columna de ${(pl.Lb/3).toFixed(1)} m mirando al jurado. Nuestra columna: escudo, pancarta, Águila y antorcha delante; los 2 que dirigen en las esquinas; LOVE HONOR SERVICE al frente; luego <b>${pl.blocks[0].rows} filas de ${pl.blocks[0].per} familias</b> (${pl.GRADES.join(', ')}), cada hijo entre su papá y su mamá; atrás la batucada y el dragón alzado. Prekinder y Nursery (con sus 4 misses cada una) se dibujan solo como referencia. Nuestras 6 misses, 2 por sección, van en los bordes de las filas de su sección.`;
   else if(pl.mode==='grados')$('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela al escenario (Jr. Gregorio Paredes) y mirando al jurado. Delante: escudo, pancarta, Águila, antorcha y los 2 que dirigen. Fila 1: <b>LOVE HONOR SERVICE</b>. Detrás, <b>una columna por grado</b> (${pl.blocks.map(b=>b.g+': '+b.rows+' filas').join(', ')}), lado a lado, de ${(pl.Lb/pl.blocks.length).toFixed(1)} m de ancho cada una: el hijo al centro y sus padres a los costados, como en el desfile. El dragón se alza detrás de todos y la batucada va al costado.`;
   else $('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela al escenario (Jr. Gregorio Paredes) y mirando al jurado. Delante: escudo, pancarta, Águila y antorcha. Fila 1: <b>LOVE HONOR SERVICE</b>. Luego ${kr.length} filas de niños (${kr.join(' + ')}) y ${pr.length} de padres (${pr.join(' + ')}), en tresbolillo para que todos vean. Batucada al costado este.`;
   drawParade(pl);drawBarra(pl);renderTable(pl);
 }
-const ABBR={aguila:'ÁG',antorcha:'AN',pancarta:'PA',escudo:'ES',letra:'L',bat:'BT',dragon:'DR',muneco:'MU',pompon:'PO',baston:'BA',direccion:'DI'};
+const ABBR={miss:'MS',aguila:'ÁG',antorcha:'AN',pancarta:'PA',escudo:'ES',letra:'L',bat:'BT',dragon:'DR',muneco:'MU',pompon:'PO',baston:'BA',direccion:'DI'};
 const gtxt=p=>p.kid?'':p.g==='papa'?' pa':' ma';
-const label=p=>p.fam+(ROLE[p.role]&&ABBR[p.role]?gtxt(p):'');
-const label3d=p=>p.letter?p.letter+' · '+p.fam:p.fam+gtxt(p);
+const label=p=>p.role==='miss'?'Miss '+p.grade:p.fam+(ROLE[p.role]&&ABBR[p.role]?gtxt(p):'');
+const label3d=p=>p.role==='miss'?'Miss '+p.grade:p.letter?p.letter+' · '+p.fam:p.fam+gtxt(p);
 function shape(x,y,p,r){
   if(ABBR[p.role]){const w=r*3,h=r*2.1,txt=p.role==='letra'?(p.letter||'L'):ABBR[p.role];
     return `<rect x="${(x-w/2).toFixed(1)}" y="${(y-h/2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="2.5" fill="${ROLE[p.role].c}"/><text x="${x.toFixed(1)}" y="${(y+r*0.5).toFixed(1)}" font-size="${(r*1.35).toFixed(1)}" font-weight="700" text-anchor="middle" style="fill:#fff">${esc(txt)}</text>`;}
@@ -733,22 +747,23 @@ function drawBarra(pl){
   (pl.blocks||[]).forEach(b=>{
     if(b.al<minA||b.al>maxA){const left=b.al>maxA;g+=`<text x="${left?4:w-4}" y="14" font-size="11" font-weight="600" text-anchor="${left?'start':'end'}" fill="${b.c}">${left?'← ':''}${esc(b.g)}${left?'':' →'}</text>`;return;}
     g+=`<text x="${X(b.al)}" y="14" font-size="12" font-weight="600" text-anchor="middle" fill="${b.c||'currentColor'}">${esc(b.g)}</text>`;
-    if(b.width&&!b.ours)g+=`<rect x="${X(b.al+b.width/2-0.3)}" y="${Y(b.depth)}" width="${(b.width-0.6)*k}" height="${(b.depth-0.4)*k}" rx="6" fill="${b.c}" opacity=".18"/><text x="${X(b.al)}" y="${Y(b.depth/2)}" font-size="11" text-anchor="middle">referencia</text>`;});
+    if(b.width&&!b.ours)g+=`<rect x="${X(b.al+b.width/2-0.3)}" y="${Y(b.depth)}" width="${(b.width-0.6)*k}" height="${(b.depth-0.4)*k}" rx="6" fill="${b.c}" opacity=".18"/><text x="${X(b.al)}" y="${Y(b.depth/2)}" font-size="11" text-anchor="middle">referencia · 4 misses</text>`;});
   const s=$('svg-barra');s.setAttribute('viewBox',`0 0 ${w} ${h}`);s.style.color='var(--fg)';s.innerHTML=g;
 }
 function renderTable(pl){
   const q=$('f-filter').value.trim().toUpperCase();
   const side=p=>p.lat<-0.1?'Iz':p.lat>0.1?'De':'Ce';
   const who=p=>p.kid?(p.f.kids>1?'Hijo/a '+p.idx:'Hijo/a'):GENDER[p.g];
-  const emo=p=>`<span title="${who(p)}">${p.kid?'🧒':p.g==='papa'?'👨':'👩'}</span>${p.kid&&p.f.kids>1?`<small>${p.idx}</small>`:''}`;
+  const emo=p=>p.role==='miss'?'<span title="Miss">👩‍🏫</span>':`<span title="${who(p)}">${p.kid?'🧒':p.g==='papa'?'👨':'👩'}</span>${p.kid&&p.f.kids>1?`<small>${p.idx}</small>`:''}`;
   const bs=(al,c)=>al>c+0.1?'Iz':al<c-0.1?'De':'Ce';
   const SHORT={aguila:'Águila',antorcha:'Antorcha',pancarta:'Pancarta',escudo:'Escudo',letra:'Letra',bat:'Batucada',dragon:'Dragón',muneco:'Muñeco',pompon:'Pompón',baston:'Bastón',direccion:'Dirige'};
   const rol=p=>p.role==='padre'||p.role==='nino'?'sin rol':p.role==='letra'?`Letra ${p.letter||''}`:SHORT[p.role];
   const ourAl=(pl.blocks[0]||{al:pl.mid}).al;
-  const bar=p=>p.b.blk==='col'?`F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.blk==='L'?`L${p.b.r}`:p.b.row==='B'||p.b.row==='C'?'Bat':p.b.row==='F'?'Atr':p.b.row==='D'?'Del':p.b.blk?`${p.b.blk} F${p.b.r}`:`F${p.b.row} P${p.bpos}`;
+  const bar=p=>p.b.row==='M'?`F${p.b.r} ${bs(p.b.al,ourAl)} borde`:p.b.blk==='col'?`F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.blk==='L'?`L${p.b.r}`:p.b.row==='B'||p.b.row==='C'?'Bat':p.b.row==='F'?'Atr':p.b.row==='D'?'Del':p.b.blk?`${p.b.blk} F${p.b.r}`:`F${p.b.row} P${p.bpos}`;
   const list=pl.P.filter(p=>!q||p.fam.toUpperCase().includes(q)).sort((a,b)=>a.fam.localeCompare(b.fam)||a.kid-b.kid||a.idx-b.idx);
   let last='';
-  $('tbody').innerHTML=list.map(p=>{const st=p.fam!==last?' class="fam-start"':'';const code=p.fam!==last?esc(p.fam)+' <span style="color:var(--muted);font-weight:400">'+[...new Set(p.f.kid.map(k=>k.grade))].join('/')+'</span>':'';last=p.fam;
+  $('tbody').innerHTML=list.map(p=>{const st=p.fam!==last?' class="fam-start"':'';const code=p.role==='miss'?'Miss <span style="color:var(--muted);font-weight:400">'+esc(p.grade)+'</span>':p.fam!==last?esc(p.fam)+' <span style="color:var(--muted);font-weight:400">'+[...new Set(p.f.kid.map(k=>k.grade))].join('/')+'</span>':'';last=p.fam;
+    if(p.role==='miss')return `<tr class="fam-start"><td class="code">${code}</td><td class="who">${emo(p)}</td><td>Miss</td><td class="pos">F${p.prow} ${side(p)}</td><td class="pos">${bar(p)}</td></tr>`;
     const k=pkey(p),cur=ST.over[k]||'',opts=p.kid?['antorcha','baston','letra','escudo']:['aguila','pancarta','bat','dragon','muneco','pompon','direccion'];
     const sel=`<select class="${cur?'manual':''}" data-k="${esc(k)}" aria-label="Rol de ${esc(p.fam)} ${esc(who(p))}"><option value=""${cur?'':' selected'}>${cur?'Automático':esc(rol(p))+' · auto'}</option><option value="libre"${cur==='libre'?' selected':''}>Sin rol</option>${opts.map(o=>`<option value="${o}"${cur===o?' selected':''}>${SHORT[o]}</option>`).join('')}</select>`;
     return `<tr${st}><td class="code">${code}</td><td class="who">${emo(p)}</td><td>${sel}</td><td class="pos">F${p.prow} ${side(p)}</td><td class="pos">${bar(p)}</td></tr>`;}).join('')
@@ -985,6 +1000,9 @@ function buildPromos(){
       dummy.position.set(s.x,h*0.39,s.z);dummy.rotation.set(0,ROT,0);dummy.scale.set(kid?0.8:1,h*0.78,kid?0.8:1);dummy.updateMatrix();bodies.setMatrixAt(i,dummy.matrix);
       dummy.position.set(s.x,h*0.78+0.13,s.z);dummy.scale.setScalar(kid?0.13:0.145);dummy.updateMatrix();heads.setMatrixAt(i,dummy.matrix);});
     bodies.castShadow=true;promoGroup.add(bodies,heads);
+    // their 4 misses stand on the edges of their column
+    [[-1,0.5],[1,0.5],[-1,b.depth*0.5],[1,b.depth*0.5]].forEach(([s,d])=>{const q=PL.at(b.al+s*(b.width/2-0.15),d);
+      const m=new THREE.Group();m.add(mesh(G.dress,ROLE.miss.c,1,1.31,1,0,0.655,0),ball('#c99069',0.145,0,1.44,0));m.position.set(q.x,0,q.z);m.rotation.y=ROT;promoGroup.add(m);});
   });
 }
 function buildStatic(){
@@ -1108,14 +1126,15 @@ function drawDraft(){
   if(pts.length>1)draftObj.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:drawMode==='bar'?0xff2d2d:0x1d2f6b})));
   pts.forEach(v=>{const m=new THREE.Mesh(G.ball,new THREE.MeshBasicMaterial({color:drawMode==='bar'?0xff2d2d:0x1d2f6b}));m.scale.setScalar(0.35);m.position.copy(v);draftObj.add(m);});
   scene.add(draftObj);
-  $('phase').textContent=drawMode==='bar'?(draft.length?'Toca el otro extremo de la barra':'Toca un extremo de la línea de barra'):`Ruta: ${draft.length} puntos · doble clic, Enter o "Terminar" para cerrar · Esc cancela`;
+  $('d-undo').hidden=!draft.length;
+  $('phase').textContent=drawMode==='bar'?(draft.length?'Toca el otro extremo de la barra':'Toca un extremo de la línea de barra'):`Ruta: ${draft.length} puntos · toca para agregar · «Terminar ruta» o Enter para cerrar · Esc cancela`;
 }
 function setDrawButtons(){
   $('d-route').setAttribute('aria-pressed',String(drawMode==='route'));$('d-bar').setAttribute('aria-pressed',String(drawMode==='bar'));
   $('d-route').textContent=drawMode==='route'?'Terminar ruta':'Dibujar ruta';$('d-bar').textContent=drawMode==='bar'?'Cancelar':'Dibujar barra';
 }
 function startDraw(mode){draft=[];drawMode=mode;$('needroute').hidden=true;setPlaying(false);setView('top');controls.enableRotate=false;setDrawButtons();drawDraft();}
-function cancelDraw(){drawMode=null;draft=[];if(draftObj)scene.remove(draftObj);draftObj=null;controls.enableRotate=true;setDrawButtons();if(PL)routeState();}
+function cancelDraw(){drawMode=null;draft=[];$('d-undo').hidden=true;if(draftObj)scene.remove(draftObj);draftObj=null;controls.enableRotate=true;setDrawButtons();if(PL)routeState();}
 function finishDraw(){
   const pts=draft.filter((q,i)=>!i||Math.hypot(q[0]-draft[i-1][0],q[1]-draft[i-1][1])>2).map(q=>[Math.round(q[0]*10)/10,Math.round(q[1]*10)/10]);
   if(drawMode==='route'&&pts.length>=2){ROUTE=pts;ST.route=pts;T=0;}
@@ -1127,14 +1146,17 @@ canvas.addEventListener('pointerdown',e=>{downAt=[e.clientX,e.clientY];});
 canvas.addEventListener('pointerup',e=>{if(!drawMode||!downAt)return;if(Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1])>6)return;
   const q=groundPx(e);if(!q)return;draft.push(q);drawDraft();if(drawMode==='bar'&&draft.length===2)finishDraw();});
 canvas.addEventListener('dblclick',()=>{if(drawMode==='route')finishDraw();});
-addEventListener('keydown',e=>{if(!drawMode)return;if(e.key==='Escape')cancelDraw();if(e.key==='Enter'&&drawMode==='route')finishDraw();});
+addEventListener('keydown',e=>{if(!drawMode)return;if(e.key==='Escape')cancelDraw();if(e.key==='Enter'&&drawMode==='route')finishDraw();
+  if((e.key==='z'&&(e.ctrlKey||e.metaKey))||e.key==='Backspace'){e.preventDefault();undoPoint();}});
+function undoPoint(){if(draft.length){draft.pop();drawDraft();}}
+$('d-undo').addEventListener('click',undoPoint);
 $('d-route').addEventListener('click',()=>drawMode==='route'?finishDraw():startDraw('route'));
 $('d-bar').addEventListener('click',()=>drawMode==='bar'?cancelDraw():startDraw('bar'));
 $('d-reset').addEventListener('click',()=>{cancelDraw();delete ST.route;delete ST.bar;ROUTE=null;BARLINE=null;$('i-len').value=24;ST.inputs['i-len']='24';saveState();rebuild();});
 // keep the moment and the camera too
 const HELP_CTX={
   general:'',
-  visor:'En el 3D cada persona lleva su código encima; si un papá o una mamá tiene rol, el código lleva «pa» o «ma». La línea roja gruesa es la línea de barra y la delgada, la ruta.',
+  visor:'Con 1 dedo giras la cámara; con 2 dedos haces zoom y mueves el plano. En el 3D cada persona lleva su código encima; si un papá o una mamá tiene rol, el código lleva «pa» o «ma». La línea roja gruesa es la línea de barra y la delgada, la ruta.',
   desfile:'Cada tramo es un pedazo de la columna. La cabeza va a la derecha del tramo 1 y los metros se cuentan desde la cabeza. Cada figura es una persona; debajo va su código.',
   barra:'Se ve como la ve el jurado: el jurado está abajo y la columna crece hacia arriba. Los rectángulos rosado y azul son Prekinder y Nursery.',
   tabla:'👨 papá, 👩 mamá, 🧒 hijo o hija. En Rol, «Auto» deja que el sistema reparta; si eliges un rol queda fijo para esa persona. Desfile: F12 Iz = fila 12 contada desde la cabeza, lado izquierdo de la marcha. Barra: F3 De = fila 3 de nuestra columna, lado derecho visto desde el jurado; L1 = fila de letras; Del = delante de la línea; Bat = batucada; Atr = al fondo; Ce = centro.'
