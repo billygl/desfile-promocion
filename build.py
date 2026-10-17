@@ -1,6 +1,8 @@
-"""Build index.html: embeds mapa.jpg into src/desfile.html so the page works offline and from file://.
+"""Build index.html: embeds mapa.jpg, banner.jpg and escudo.png into src/desfile.html so the page works offline.
 
-With --home it also copies the page to greens2037.website/desfile (the home-site repo).
+python build.py                 -> only builds index.html
+python build.py --home          -> also copies it to the greens2037.website repo (default ../../lhs_directory/home-site)
+python build.py --home <path>   -> same, with the home-site repo somewhere else
 """
 import base64
 import pathlib
@@ -16,7 +18,12 @@ for ph, f, mime in [("__BANNER__", "banner.jpg", "image/jpeg"), ("__ESCUDO__", "
 print("index.html built")
 
 if "--home" in sys.argv:
-    home = root.parent.parent / "lhs_directory" / "home-site" / "desfile"
-    home.mkdir(exist_ok=True)
-    shutil.copy(root / "index.html", home / "index.html")
-    print("copied to", home)
+    i = sys.argv.index("--home")
+    site = pathlib.Path(sys.argv[i + 1]) if len(sys.argv) > i + 1 else root.parent.parent / "lhs_directory" / "home-site"
+    if not (site / ".git").exists():
+        sys.exit(f"No encuentro el repo del sitio en {site.resolve()}.\n"
+                 f"Clónalo ahí:  git clone https://github.com/billygl/greens2037-home.git \"{site.resolve()}\"\n"
+                 f"o indica dónde está:  python build.py --home <ruta-a-home-site>")
+    (site / "desfile").mkdir(exist_ok=True)
+    shutil.copy(root / "index.html", site / "desfile" / "index.html")
+    print("copied to", site / "desfile")

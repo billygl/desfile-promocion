@@ -27,6 +27,14 @@ Necesita esta estructura de carpetas:
 <raíz>/lhs_directory/home-site     ← billygl/greens2037-home (sitio greens2037.website)
 ```
 
+Si en esta computadora solo está clonado este repo, falta el del sitio (es privado; necesita `gh auth login` con la cuenta billygl):
+
+```
+git clone https://github.com/billygl/greens2037-home.git ../../lhs_directory/home-site
+```
+
+(o clónalo donde quieras y usa `python build.py --home <ruta-a-home-site>`).
+
 1. `git pull` en los dos repos antes de empezar (se trabaja desde más de una computadora).
 2. Editar `src/desfile.html`.
 3. `python build.py --home`
