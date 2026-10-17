@@ -54,6 +54,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 #tlabel{font-family:var(--f-mono);font-size:.8rem;font-variant-numeric:tabular-nums;min-width:52px;text-align:right}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.82rem}
 .legend i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.legend{align-items:center}
+.legend b{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-right:2px}
+.chip{display:inline-block;min-width:24px;padding:1px 5px;border-radius:4px;color:#fff;font:600 .7rem/1.4 var(--f-mono);text-align:center;margin-right:5px;vertical-align:1px}
+.legend .sep{flex-basis:100%;height:0}
+.hud .tools{margin-left:auto}
+.hud .tools button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+td select{font:inherit;font-size:.82rem;padding:3px 4px;border:1px solid var(--line);border-radius:5px;background:var(--surface);color:var(--fg);max-width:220px}
+td select.manual{border-color:var(--accent);font-weight:700}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .card p{margin:0;color:var(--muted);max-width:78ch}
 .scroll{overflow-x:auto}
@@ -91,7 +99,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
   <section class="controls" aria-label="Supuestos">
     <label for="i-pct">Asistencia estimada %<input id="i-pct" type="number" min="30" max="100" value="80"></label>
     <label for="i-bat">Batucada (personas)<input id="i-bat" type="number" min="0" max="12" value="6"></label>
-    <label for="i-len">Largo línea de barra (m)<input id="i-len" type="number" min="8" max="40" step="0.5" value="14"></label>
+    <label for="i-len">Largo línea de barra (m)<input id="i-len" type="number" min="8" max="40" step="0.5" value="24"></label>
     <label for="i-mode">Barra<select id="i-mode"><option value="columna">Columna junto a Prekinder y Nursery</option><option value="filas">Filas horizontales (toda la línea)</option></select></label>
     <label for="i-slot">Nuestra columna<select id="i-slot"><option value="centro">Al centro</option><option value="izq">Izquierda (vista del jurado)</option><option value="der">Derecha (vista del jurado)</option></select></label>
     <label for="i-face">Frente de la barra<select id="i-face"><option value="jurado">Hacia el jurado (escenario)</option><option value="sur">Hacia el sur</option></select></label>
@@ -106,6 +114,11 @@ tr.fam-start td{border-top:2px solid var(--line)}
         <button id="v-3d" aria-pressed="true">3D</button>
         <button id="v-follow" aria-pressed="false">Seguir</button>
         <button id="v-jurado" aria-pressed="false">Vista del jurado</button>
+      </div>
+      <div class="seg tools" role="group" aria-label="Dibujar">
+        <button id="d-route" aria-pressed="false">Dibujar ruta</button>
+        <button id="d-bar" aria-pressed="false">Dibujar barra</button>
+        <button id="d-reset">Restaurar líneas</button>
       </div>
       <div class="phase" id="phase">Ingreso</div>
     </div>
@@ -134,7 +147,8 @@ tr.fam-start td{border-top:2px solid var(--line)}
   <section class="card">
     <h2>Propuesta por familia</h2>
     <p>Dónde va cada integrante en el desfile y en la barra. Las filas se cuentan desde la cabeza del desfile; en la barra, la fila 1 es la más cercana al jurado y el puesto 1 es el extremo por donde llega el desfile.</p>
-    <div class="row"><input id="f-filter" type="search" placeholder="Buscar código…" aria-label="Buscar código"></div>
+    <p>Para repartir rápido, cambia el rol en la columna <b>Rol</b>: queda fijo para esa persona y el resto se reacomoda solo. Todo se guarda en este navegador, aunque cierres Chrome.</p>
+    <div class="row"><input id="f-filter" type="search" placeholder="Buscar código…" aria-label="Buscar código"><button class="btn" id="over-clear">Quitar asignaciones manuales</button><span class="note" id="over-msg"></span></div>
     <div class="tablewrap"><table><thead><tr><th>Código</th><th>Integrante</th><th>Rol</th><th>Desfile</th><th>Barra</th></tr></thead><tbody id="tbody"></tbody></table></div>
   </section>
 
@@ -157,7 +171,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
         <li>En la barra, de adelante hacia atrás: escudo, pancarta con Águila y antorcha, la fila de letras, los demás niños y luego los padres. Cada padre queda lo más cerca posible detrás de su hijo.</li>
         <li>La barra queda paralela al escenario (Jr. Gregorio Paredes) y mira al escenario, donde está el jurado.</li>
       </ul>
-      <p class="note">La escala sale del zoom de Google Maps (≈0.3 m por píxel) y el escenario, la gradería y la cancha están ubicados a partir de la foto. Midan la línea de barra en el patio y escriban el largo real arriba: todo se recalibra.</p>
+      <p class="note">La escala sale del zoom de Google Maps (≈0.3 m por píxel del plano). La ruta y la línea de barra se pueden redibujar con los botones del visor; el largo real de la barra se escribe arriba.</p>
     </section>
   </div>
 </div>
@@ -170,8 +184,8 @@ const IMG_W=946, IMG_H=830, CX=473, CY=415;
 // Red route traced from the school plan (pixels): starts at the corridor, ends at the patio
 const ROUTE_PX=[[446,325],[445,278],[470,251],[500,220],[527,193],[513,179],[488,166],[466,148],[448,135],[427,134],[410,151],[397,165],[390,180]];
 const ROAD_DEG=-54.2;             // heading of Jr. Gregorio Paredes in the plan image; the stage is parallel to it
-const BAR_C=[401,182], BAR_PX=46; // barra center and the length (px) the user drew
-const SITE={court:[414,191],stage:[364,155],stands:[393,220],front:[459,224],corridor:[432,166]};
+const BAR_PX=46;
+
 // patio walls (plan pixels): the Tafur side behind the stage and the Sihuas side
 const WALLS=[[[300,225],[430,55]],[[430,55],[540,135]]];
 const V=1.0; // m/s walking pace
@@ -195,11 +209,17 @@ const KID_ROLES=['antorcha','baston','letra','escudo'];
 const DETACHED=['aguila','pancarta','bat','dragon'];
 const GENDER={papa:'Papá',mama:'Mamá'};
 const $=id=>document.getElementById(id);
-let S=14/BAR_PX;
+let S=0.135; // m per plan pixel, fitted to the school outline in OpenStreetMap (±10%)
 const W=p=>({x:(p[0]-CX)*S,z:(p[1]-CY)*S});
 const RAD=ROAD_DEG*Math.PI/180;
 const EAST={x:Math.cos(RAD),z:Math.sin(RAD)}, NORTH={x:EAST.z,z:-EAST.x};
-const SITE_ROT=-Math.atan2(EAST.z,EAST.x); // local +x = along the stage (toward Sihuas), local +z = away from the stage
+const SITE_ROT=-Math.atan2(EAST.z,EAST.x);
+// Everything is placed in meters from the middle of the Tafur wall (behind the stage)
+const WALL_MID=[365,140];
+const fromWall=(along,out)=>[WALL_MID[0]+(EAST.x*along-NORTH.x*out)/S,WALL_MID[1]+(EAST.z*along-NORTH.z*out)/S];
+const COURT={len:24,wid:13};
+const SITE={stage:fromWall(0,2.4),court:fromWall(0,13.5),stands:fromWall(-16.5,13.5),front:fromWall(0,22.5),corridor:fromWall(13.3,12)};
+const BAR_C=fromWall(0,10); // local +x = along the stage (toward Sihuas), local +z = away from the stage
 
 /* ---------- families ---------- */
 // Family codes from the class directory (initials only). Mark absences with "-".
@@ -282,6 +302,15 @@ function parseFamilies(text){
     return f;
   });
 }
+// Everything the viewer changes is kept in this browser (survives refresh and closing Chrome)
+const STATE_KEY='desfile-estado-v1';
+let ST=(()=>{try{return JSON.parse(localStorage.getItem(STATE_KEY))||{}}catch(e){return {}}})();
+ST.over=ST.over||{};ST.inputs=ST.inputs||{};
+function saveNow(){try{localStorage.setItem(STATE_KEY,JSON.stringify(ST))}catch(e){}}
+let saveTimer;function saveState(){clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,250);}
+let ROUTE=ST.route&&ST.route.length>1?ST.route:ROUTE_PX.map(q=>[...q]);
+let BARLINE=ST.bar&&ST.bar.length===2?ST.bar:null;
+const pkey=p=>p.kid?`${p.fam}:h${p.idx}`:`${p.fam}:${p.g}`;
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 
 function cfg(){
@@ -292,7 +321,7 @@ function cfg(){
 /* ---------- path ---------- */
 let PATH;
 function makePath(){
-  const pts=ROUTE_PX.map(W), cum=[0];
+  const pts=ROUTE.map(W), cum=[0];
   for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+Math.hypot(pts[i].x-pts[i-1].x,pts[i].z-pts[i-1].z));
   return {pts,cum,L:cum[cum.length-1]};
 }
@@ -315,7 +344,8 @@ function plan(c,fams){
   fams.forEach(f=>f.est=false);
   if(!fams.some(f=>f.marked)&&c.pct<100){
     const n=Math.round(fams.length*(1-c.pct/100));
-    const cand=fams.filter(f=>!f.roles.length&&!f.kidRoles.length&&f.kids===1);
+    const manual=new Set(Object.keys(ST.over).map(k=>k.split(':')[0]));
+    const cand=fams.filter(f=>!f.roles.length&&!f.kidRoles.length&&f.kids===1&&!manual.has(f.code));
     pickEven(cand,n).forEach(f=>f.est=true);
   }
   const att=fams.filter(f=>!f.absent&&!f.est);
@@ -324,10 +354,12 @@ function plan(c,fams){
   att.forEach(f=>{f.par=[];f.kid=[];
     f.genders.forEach((g,i)=>{const p=add('padre',f,false,i+1);p.g=g;f.par.push(p);});
     for(let i=0;i<f.kids;i++){const k=add('nino',f,true,i+1);k.grade=f.grades[i]||f.grades[0]||'Promo';f.kid.push(k);}});
+  // manual assignments from the table win over everything else
+  P.forEach(p=>{const o=ST.over[pkey(p)];if(!o)return;p.lock=true;if(o!=='libre'&&ROLE[o])p.role=o;});
   const count=r=>P.filter(p=>p.role===r).length;
   const need={direccion:2,aguila:1,pancarta:3,bat:c.bat,dragon:3,muneco:6,pompon:6,antorcha:1,baston:8,escudo:1,letra:WORDS.join('').length};
-  const freePar=(f,g)=>f.par.find(p=>p.role==='padre'&&(!g||p.g===g));
-  const freeKid=f=>f.kid.find(p=>p.role==='nino');
+  const freePar=(f,g)=>f.par.find(p=>p.role==='padre'&&!p.lock&&(!g||p.g===g));
+  const freeKid=f=>f.kid.find(p=>p.role==='nino'&&!p.lock);
   // explicit roles from the list
   att.forEach(f=>{
     f.roles.forEach(({role:r,who})=>{if(count(r)<need[r]){const p=freePar(f,who);if(p)p.role=r;}});
@@ -389,12 +421,12 @@ function plan(c,fams){
       let role=i%2===0?'pompon':'muneco';
       if(role==='pompon'&&needP<=0)role='muneco';if(role==='muneco'&&needM<=0)role='pompon';
       if((role==='pompon'?needP:needM)<=0)return;
-      const p=u.par.find(x=>x.role==='padre');if(!p)return;
+      const p=u.par.find(x=>x.role==='padre'&&!x.lock);if(!p)return;
       p.role=role;role==='pompon'?needP--:needM--;});
   });
   let needB=need.baston-count('baston');
   const bOrder=[...pickEven(pairRows,Math.ceil(needB/2)),...pairRows];
-  for(const row of bOrder){if(needB<=0)break;[row.l,row.r].forEach(u=>{if(!u||needB<=0)return;const k=u.kids.find(x=>x.role==='nino');if(k){k.role='baston';needB--;}});}
+  for(const row of bOrder){if(needB<=0)break;[row.l,row.r].forEach(u=>{if(!u||needB<=0)return;const k=u.kids.find(x=>x.role==='nino'&&!x.lock);if(k){k.role='baston';needB--;}});}
 
   by('direccion').forEach((p,i)=>put(p,i%2?3.4:-3.4,lon+Math.floor(i/2)*1.2));
   const drs=by('dragon');
@@ -421,13 +453,15 @@ function plan(c,fams){
   P.forEach(p=>p.prow=lons.indexOf(p.lon.toFixed(2))+1);
 
   /* barra */
-  const ctr=W(BAR_C),Lb=BAR_PX*S;
-  const u={x:EAST.x,z:EAST.z};
+  const half=c.len/S/2,bl=(BARLINE||[[BAR_C[0]-EAST.x*half,BAR_C[1]-EAST.z*half],[BAR_C[0]+EAST.x*half,BAR_C[1]+EAST.z*half]]).map(W);
+  const ctr={x:(bl[0].x+bl[1].x)/2,z:(bl[0].z+bl[1].z)/2},Lb=c.len;
+  const dl=Math.hypot(bl[1].x-bl[0].x,bl[1].z-bl[0].z)||1,sw=W(SITE.stage);
+  let nb={x:-(bl[1].z-bl[0].z)/dl,z:(bl[1].x-bl[0].x)/dl}; // rows stack away from the stage
+  if(nb.x*(ctr.x-sw.x)+nb.z*(ctr.z-sw.z)<0)nb={x:-nb.x,z:-nb.z};
+  if(c.face==='sur')nb={x:-nb.x,z:-nb.z};
+  const u={x:nb.z,z:-nb.x}; // the jury's left
   const A={x:ctr.x-u.x*Lb/2,z:ctr.z-u.z*Lb/2},B={x:ctr.x+u.x*Lb/2,z:ctr.z+u.z*Lb/2};
-  let nb={x:-NORTH.x,z:-NORTH.z}; // rows stack away from the jury
-  if(c.face==='sur')nb=NORTH;
-  const flip=c.face==='sur'?-1:1; // keep "puesto 1" at the west end
-  const at=(al,dp,row)=>{const a=flip>0?al:Lb-al;return {x:A.x+u.x*a+nb.x*dp,z:A.z+u.z*a+nb.z*dp,al,dp,row}};
+  const at=(al,dp,row)=>({x:A.x+u.x*al+nb.x*dp,z:A.z+u.z*al+nb.z*dp,al,dp,row});
   const mid=Lb/2;
   by('escudo').forEach(p=>p.b=at(mid,-2.6,'D'));
   by('pancarta').forEach((p,i,a)=>p.b=at(mid+(i-(a.length-1)/2)*1.6,-1.5,'D'));
@@ -456,30 +490,34 @@ function plan(c,fams){
     const alOf=i=>mid+(1-i)*bs; // column 0 is on the jury's left
     const cAl=alOf(order[0]);
     const put2=(p,lat,dd,row,extra)=>{p.b=at(cAl-lat,dd,row);Object.assign(p.b,extra||{});};
-    by('escudo').forEach(p=>put2(p,0,-3.0,'D'));
-    by('pancarta').forEach((p,i,a)=>put2(p,(i-(a.length-1)/2)*1.4,-2.0,'D'));
-    by('aguila').forEach(p=>put2(p,2.2,-2.1,'D'));
-    by('antorcha').forEach(p=>put2(p,-2.2,-2.1,'D'));
-    by('direccion').forEach((p,i)=>{put2(p,i%2?1.9:-1.9,-0.9,'D');p.faceGroup=true;});
+    const hw=bs/2-0.4;
+    by('escudo').forEach(p=>put2(p,0,-2.2,'D'));
+    by('pancarta').forEach((p,i,a)=>put2(p,(i-(a.length-1)/2)*1.4,-1.4,'D'));
+    by('aguila').forEach(p=>put2(p,Math.min(hw,2.6),-1.5,'D'));
+    by('antorcha').forEach(p=>put2(p,-Math.min(hw,2.6),-1.5,'D'));
+    by('direccion').forEach((p,i)=>{put2(p,(i%2?1:-1)*Math.min(hw,3.4),-0.6,'D');p.faceGroup=true;});
     // letters: one word per row, readable from the jury
     let lq2=[...letters],d=0.4;
-    WORDS.forEach((w,wi)=>{const gap=w.length>5?0.62:0.75;
-      for(let j=0;j<w.length;j++){const p=lq2.shift();if(p)put2(p,(j-(w.length-1)/2)*gap,d,'L'+(wi+1),{blk:'L',r:wi+1});}
+    const lrows=bs>=7.2?[WORDS[0]+' '+WORDS[1],WORDS[2]]:WORDS; // LOVE HONOR / SERVICE when the column is wide enough
+    lrows.forEach((w,wi)=>{const gap=0.62;
+      for(let j=0;j<w.length;j++){if(w[j]===' ')continue;const p=lq2.shift();if(p)put2(p,(j-(w.length-1)/2)*gap,d,'L'+(wi+1),{blk:'L',r:wi+1});}
       d+=0.7;});
     const dp0=d+0.3;let maxDp=dp0;
-    // 3 families per row: parents on each side of their kid
+    // as many families per row as fit: parents on each side of their kid
     const us=[...units].sort((x,y)=>GRADES.indexOf(x.g)-GRADES.indexOf(y.g));
+    const per=Math.max(2,Math.floor((bs-0.4)/1.5));
     let nRows=0;
-    for(let i=0;i<us.length;i+=3,nRows++){const dd=dp0+nRows*0.75;maxDp=dd;
-      us.slice(i,i+3).forEach((u,j,arr)=>{const cx=(j-(arr.length-1)/2)*1.55,tag={blk:'col',r:nRows+1};
+    for(let i=0;i<us.length;i+=per,nRows++){const dd=dp0+nRows*0.75;maxDp=dd;
+      us.slice(i,i+per).forEach((u,j,arr)=>{const cx=(j-(arr.length-1)/2)*1.5,tag={blk:'col',r:nRows+1};
         u.kids.forEach((k,m)=>put2(k,cx+(m-(u.kids.length-1)/2)*0.4,dd,'R'+(nRows+1),tag));
         const sp=u.kids.length>1?0.65:0.5;
         u.par.forEach((p2,m)=>put2(p2,cx+(u.par.length===1?-sp:(m?sp:-sp)),dd,'R'+(nRows+1),tag));});}
-    by('bat').forEach((p,i)=>put2(p,((i%3)-1)*1.3,maxDp+1.0+Math.floor(i/3)*0.9,'B'));
-    const back=maxDp+1.0+Math.ceil(by('bat').length/3)*0.9+0.3;
+    const bpr=Math.max(3,Math.min(6,Math.floor(bs/1.2)));
+    by('bat').forEach((p,i,a)=>{const n=Math.min(bpr,a.length-Math.floor(i/bpr)*bpr);put2(p,((i%bpr)-(n-1)/2)*1.2,maxDp+0.9+Math.floor(i/bpr)*0.9,'B');});
+    const back=maxDp+0.9+Math.ceil(by('bat').length/bpr)*0.9+0.2;
     drs.forEach((p,j)=>put2(p,(j-(drs.length-1)/2)*2.2,back,'F'));
     P.filter(p=>!p.b).forEach((p,i)=>put2(p,(i-0.5)*0.7,back+0.8,'F'));
-    PROMOS.forEach((pr,i)=>blocks.push({...pr,al:alOf(order[i]),rows:nRows,ours:i===0,width:bs,depth:back+0.6}));
+    PROMOS.forEach((pr,i)=>blocks.push({...pr,al:alOf(order[i]),rows:nRows,per,ours:i===0,width:bs,depth:back+0.6}));
   }else{
   const kidList=P.filter(p=>p.kid&&!p.b).sort((a,b)=>a.lon-b.lon||a.lat-b.lat);
   const kGap=0.55;kRowsB=rowsOf(kidList.length,kGap,Math.max(4,Math.floor(Lb/kGap)+1));
@@ -508,7 +546,7 @@ function plan(c,fams){
 
   P.forEach(p=>{const e=pathAt(PATH.L),d=pathDir(PATH.L);p.e={x:e.x-d.z*p.lat,z:e.z+d.x*p.lat};p.D=Math.hypot(p.b.x-p.e.x,p.b.z-p.e.z);});
   const tEnd=Math.max(...P.map(p=>(p.lon+PATH.L+p.D)/V))+2;
-  return {P,att,fams,kids:P.filter(p=>p.kid).length,parents:P.filter(p=>!p.kid).length,rows:rows.length,maxLon,sections,Lb,nb,mid,kRowsB,pRowsB,blocks,GRADES,mode:c.mode,letterRow:letters.length>0,tEnd,A,B,ctr,at};
+  return {P,att,fams,kids:P.filter(p=>p.kid).length,parents:P.filter(p=>!p.kid).length,rows:rows.length,maxLon,sections,Lb,nb,mid,kRowsB,pRowsB,blocks,GRADES,mode:c.mode,letterRow:letters.length>0,tEnd,A,B,ctr,at,u};
 }
 
 /* ---------- stats, diagrams, table ---------- */
@@ -525,22 +563,27 @@ function renderInfo(pl){
     stat(fmtT((PATH.L+pl.maxLon)/V),'min:seg de recorrido a 1 m/s')+gradeTile;
   const sh=(svg)=>`<svg width="12" height="12" viewBox="0 0 12 12" style="vertical-align:-1px;margin-right:5px">${svg}</svg>`;
   $('legend').innerHTML=
-    `<span>${sh('<rect x="1" y="1" width="10" height="10" rx="1.5" fill="currentColor"/>')}Papá</span>`+
-    `<span>${sh('<circle cx="6" cy="6" r="5" fill="currentColor"/>')}Mamá</span>`+
-    `<span>${sh('<rect x="2.5" y="2.5" width="7" height="7" transform="rotate(45 6 6)" fill="currentColor"/>')}Niño / niña</span>`+
-    `<span style="color:var(--muted)">· color = rol:</span>`+
-    `<span><i style="background:${ROLE.padre.c}"></i>Papá sin rol</span><span><i style="background:#3f9a58"></i>Mamá sin rol</span>`+
-    Object.entries(ROLE).filter(([k])=>k!=='padre').map(([k,r])=>`<span><i style="background:${r.c}"></i>${r.n}</span>`).join('');
+    `<b>Quién</b>`+
+    `<span>${sh(`<rect x="1" y="1" width="10" height="10" rx="1.5" fill="${ROLE.padre.c}"/>`)}Papá</span>`+
+    `<span>${sh('<circle cx="6" cy="6" r="5" fill="#3f9a58"/>')}Mamá</span>`+
+    `<span>${sh(`<rect x="2.5" y="2.5" width="7" height="7" transform="rotate(45 6 6)" fill="${ROLE.nino.c}"/>`)}Niño / niña</span>`+
+    `<span>pa / ma junto al código = papá o mamá con rol</span><span class="sep"></span>`+
+    `<b>Qué lleva</b>`+
+    Object.entries(ABBR).map(([k,a])=>`<span><span class="chip" style="background:${ROLE[k].c}">${k==='letra'?'L·O':a}</span>${ROLE[k].n}</span>`).join('');
   $('parade-sum').innerHTML=`Columna de <b>${pl.maxLon.toFixed(1)} m</b> por <b>≈5.4 m</b> de ancho. Cabeza: Águila, antorcha, pancarta, escudo, LOVE / HONOR / SERVICE y batucada. Luego <b>${pl.rows} filas de familias</b> agrupadas por grado (${pl.GRADES.join(', ')}), con el dragón al medio. La ruta mide ≈${PATH.L.toFixed(0)} m y pasa frente al escenario antes de formar la barra.`;
   const kr=pl.kRowsB.map(r=>r.length),pr=pl.pRowsB.map(r=>r.length);
-  if(pl.mode==='columna')$('barra-sum').innerHTML=`La línea de <b>${pl.Lb.toFixed(1)} m</b> la comparten las 3 promociones: <b>Kinder (nosotros, verde)</b>, Prekinder (rosado) y Nursery (azul), cada una en una columna de ${(pl.Lb/3).toFixed(1)} m mirando al jurado. Nuestra columna: escudo, pancarta, Águila y antorcha delante; los 2 que dirigen en las esquinas; LOVE / HONOR / SERVICE en 3 filas; luego <b>${pl.blocks[0].rows} filas de 3 familias</b> (${pl.GRADES.join(', ')}), cada hijo entre su papá y su mamá; atrás la batucada y el dragón alzado. Prekinder y Nursery se dibujan solo como referencia.`;
+  if(pl.mode==='columna')$('barra-sum').innerHTML=`La línea de <b>${pl.Lb.toFixed(1)} m</b> la comparten las 3 promociones: <b>Kinder (nosotros, verde)</b>, Prekinder (rosado) y Nursery (azul), cada una en una columna de ${(pl.Lb/3).toFixed(1)} m mirando al jurado. Nuestra columna: escudo, pancarta, Águila y antorcha delante; los 2 que dirigen en las esquinas; LOVE HONOR SERVICE al frente; luego <b>${pl.blocks[0].rows} filas de ${pl.blocks[0].per} familias</b> (${pl.GRADES.join(', ')}), cada hijo entre su papá y su mamá; atrás la batucada y el dragón alzado. Prekinder y Nursery se dibujan solo como referencia.`;
   else if(pl.mode==='grados')$('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela al escenario (Jr. Gregorio Paredes) y mirando al jurado. Delante: escudo, pancarta, Águila, antorcha y los 2 que dirigen. Fila 1: <b>LOVE HONOR SERVICE</b>. Detrás, <b>una columna por grado</b> (${pl.blocks.map(b=>b.g+': '+b.rows+' filas').join(', ')}), lado a lado, de ${(pl.Lb/pl.blocks.length).toFixed(1)} m de ancho cada una: el hijo al centro y sus padres a los costados, como en el desfile. El dragón se alza detrás de todos y la batucada va al costado.`;
   else $('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela al escenario (Jr. Gregorio Paredes) y mirando al jurado. Delante: escudo, pancarta, Águila y antorcha. Fila 1: <b>LOVE HONOR SERVICE</b>. Luego ${kr.length} filas de niños (${kr.join(' + ')}) y ${pr.length} de padres (${pr.join(' + ')}), en tresbolillo para que todos vean. Batucada al costado este.`;
   drawParade(pl);drawBarra(pl);renderTable(pl);
 }
-const label=p=>p.letter||p.fam;
-const label3d=p=>p.letter?p.letter+' · '+p.fam:p.kid?p.fam:p.fam+(p.g==='papa'?' ♂':' ♀');
+const ABBR={aguila:'ÁG',antorcha:'AN',pancarta:'PA',escudo:'ES',letra:'L',bat:'BT',dragon:'DR',muneco:'MU',pompon:'PO',baston:'BA',direccion:'DI'};
+const gtxt=p=>p.kid?'':p.g==='papa'?' pa':' ma';
+const label=p=>p.fam+(ROLE[p.role]&&ABBR[p.role]?gtxt(p):'');
+const label3d=p=>p.letter?p.letter+' · '+p.fam:p.fam+gtxt(p);
 function shape(x,y,p,r){
+  if(ABBR[p.role]){const w=r*3,h=r*2.1,txt=p.role==='letra'?(p.letter||'L'):ABBR[p.role];
+    return `<rect x="${(x-w/2).toFixed(1)}" y="${(y-h/2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="2.5" fill="${ROLE[p.role].c}"/><text x="${x.toFixed(1)}" y="${(y+r*0.5).toFixed(1)}" font-size="${(r*1.35).toFixed(1)}" font-weight="700" text-anchor="middle" style="fill:#fff">${esc(txt)}</text>`;}
   const c=p.role==='padre'&&p.g==='mama'?'#3f9a58':ROLE[p.role].c,X=x.toFixed(1),Y=y.toFixed(1);
   if(p.kid){const d=r*1.15;return `<polygon points="${X},${(y-d).toFixed(1)} ${(x+d).toFixed(1)},${Y} ${X},${(y+d).toFixed(1)} ${(x-d).toFixed(1)},${Y}" fill="${c}"/>`;}
   if(p.g==='papa')return `<rect x="${(x-r*0.88).toFixed(1)}" y="${(y-r*0.88).toFixed(1)}" width="${r*1.76}" height="${r*1.76}" rx="1.5" fill="${c}"/>`;
@@ -548,7 +591,7 @@ function shape(x,y,p,r){
 }
 function dot(x,y,p,r,showCode){
   let s=shape(x,y,p,r);
-  if(showCode)s+=`<text class="code" x="${x.toFixed(1)}" y="${(y+r+7).toFixed(1)}" font-size="6.5" text-anchor="middle">${esc(label(p))}</text>`;
+  if(showCode)s+=`<text class="code" x="${x.toFixed(1)}" y="${(y+(ABBR[p.role]?r*1.05:r)+7).toFixed(1)}" font-size="6.5" text-anchor="middle">${esc(label(p))}</text>`;
   return s;
 }
 function drawParade(pl){
@@ -593,7 +636,9 @@ function renderTable(pl){
   const list=pl.P.filter(p=>!q||p.fam.toUpperCase().includes(q)).sort((a,b)=>a.fam.localeCompare(b.fam)||a.kid-b.kid||a.idx-b.idx);
   let last='';
   $('tbody').innerHTML=list.map(p=>{const st=p.fam!==last?' class="fam-start"':'';const code=p.fam!==last?esc(p.fam)+' <span style="color:var(--muted);font-weight:400">'+[...new Set(p.f.kid.map(k=>k.grade))].join('/')+'</span>':'';last=p.fam;
-    return `<tr${st}><td class="code">${code}</td><td><i style="background:${ROLE[p.role].c}"></i>${who(p)}</td><td>${esc(rol(p))}</td><td>Fila ${p.prow} · ${side(p)}</td><td>${bar(p)}</td></tr>`;}).join('')
+    const k=pkey(p),cur=ST.over[k]||'',opts=p.kid?['antorcha','baston','letra','escudo']:['aguila','pancarta','bat','dragon','muneco','pompon','direccion'];
+    const sel=`<select class="${cur?'manual':''}" data-k="${esc(k)}" aria-label="Rol de ${esc(p.fam)} ${esc(who(p))}"><option value=""${cur?'':' selected'}>${cur?'Automático':'Auto · '+esc(rol(p))}</option><option value="libre"${cur==='libre'?' selected':''}>Sin rol</option>${opts.map(o=>`<option value="${o}"${cur===o?' selected':''}>${ROLE[o].n}</option>`).join('')}</select>`;
+    return `<tr${st}><td class="code">${code}</td><td><i style="background:${ROLE[p.role].c}"></i>${who(p)}</td><td>${sel}</td><td>Fila ${p.prow} · ${side(p)}</td><td>${bar(p)}</td></tr>`;}).join('')
     +pl.fams.filter(f=>(f.absent||f.est)&&(!q||f.code.toUpperCase().includes(q))).map(f=>`<tr class="fam-start"><td class="code">${esc(f.code)}</td><td colspan="4">${f.est?'No asiste (estimado por el % de asistencia)':'No asiste'}</td></tr>`).join('');
 }
 
@@ -758,12 +803,13 @@ function buildSite(){
   if(siteGroup)scene.remove(siteGroup);
   siteGroup=new THREE.Group();scene.add(siteGroup);
   // court: long axis north-south, hoop end at the stage
-  const court=new THREE.Mesh(new THREE.PlaneGeometry(16,30),new THREE.MeshStandardMaterial({roughness:.9,map:canvasTex(320,600,(x,w,h)=>{
-    const k=20;x.fillStyle='#4aa59a';x.fillRect(0,0,w,h);x.strokeStyle='#ffffff';x.lineWidth=4;
-    x.strokeRect(0.5*k,1*k,15*k,28*k);x.beginPath();x.moveTo(0.5*k,15*k);x.lineTo(15.5*k,15*k);x.stroke();
-    x.beginPath();x.arc(8*k,15*k,1.8*k,0,Math.PI*2);x.stroke();
-    x.strokeStyle='#f4c542';[1,29].forEach((y,i)=>{x.strokeRect(5.55*k,i?y*k-5.8*k:y*k,4.9*k,5.8*k);x.beginPath();x.arc(8*k,y*k,6.75*k,i?Math.PI:0,i?2*Math.PI:Math.PI);x.stroke();});
-    x.strokeStyle='#e0643a';x.beginPath();x.arc(8*k,15*k,4*k,0,Math.PI*2);x.stroke();})}));
+  const CL=COURT.len,CWd=COURT.wid,k=20;
+  const court=new THREE.Mesh(new THREE.PlaneGeometry(CL+2,CWd+1),new THREE.MeshStandardMaterial({roughness:.9,map:canvasTex((CL+2)*k,(CWd+1)*k,(x,w,h)=>{
+    x.fillStyle='#4aa59a';x.fillRect(0,0,w,h);x.strokeStyle='#ffffff';x.lineWidth=4;
+    x.strokeRect(k,0.5*k,CL*k,CWd*k);x.beginPath();x.moveTo(w/2,0.5*k);x.lineTo(w/2,(CWd+0.5)*k);x.stroke();
+    x.beginPath();x.arc(w/2,h/2,1.8*k,0,Math.PI*2);x.stroke();
+    x.strokeStyle='#f4c542';[k,(CL+1)*k].forEach((cx,i)=>{x.beginPath();x.arc(cx,h/2,6*k,i?Math.PI/2:-Math.PI/2,i?Math.PI*1.5:Math.PI/2);x.stroke();});
+    x.strokeStyle='#e0643a';x.beginPath();x.arc(w/2,h/2,3.6*k,0,Math.PI*2);x.stroke();})}));
   court.rotation.x=-Math.PI/2;court.receiveShadow=true;
   const cg=placed(new THREE.Group(),SITE.court,0.015);cg.add(court);siteGroup.add(cg);
   // stage with canopy, backdrop, skirt banner, speakers; brick wall and hoop behind
@@ -779,7 +825,7 @@ function buildSite(){
   st.add(box('#ffffff',1.8,1.05,0.06,9,3.3,-2.35),stick('#666',0.4,9,2.6,-2.15,0.03));
   const rim=new THREE.Mesh(new THREE.TorusGeometry(0.23,0.02,6,20),M('#e0643a'));rim.rotation.x=Math.PI/2;rim.position.set(9,3.05,-1.95);st.add(rim);
   // jury: tables in front of the stage, facing the barra
-  const jr=new THREE.Group();jr.position.set(-2.4,0,4.4);
+  const jr=new THREE.Group();jr.position.set(-2.4,0,3.4);
   jr.add(box('#ffffff',3.8,0.06,0.8,0,0.75,0));[-1.8,1.8].forEach(x=>jr.add(stick('#999',0.75,x,0,0,0.03)));
   [-1.35,-0.45,0.45,1.35].forEach(x=>{jr.add(mesh(G.body,'#555b66',1,0.75,1,x,0.62,-0.6),ball('#c99069',0.145,x,1.18,-0.6));});
   const jl=labelSprite('JURADO','#1d2f6b',1.6);jl.position.set(0,2.1,0);jr.add(jl);st.add(jr);
@@ -802,8 +848,8 @@ function buildSite(){
   const front=placed(new THREE.Group(),SITE.front);const fs=makeStand(14,'GRADERÍA FRENTE AL ESCENARIO');fs.rotation.y=Math.PI/2;front.add(fs);siteGroup.add(front);
   // covered corridor on the east side
   const co=placed(new THREE.Group(),SITE.corridor);
-  co.add(box('#9db7b5',3.5,0.1,16,0,3.3,0));
-  for(let z=-8;z<=8;z+=4)co.add(stick('#666',3.3,-1.7,0,z,0.05));
+  co.add(box('#9db7b5',2.5,0.1,16,0,3.3,0));
+  for(let z=-8;z<=8;z+=4)co.add(stick('#666',3.3,-1.2,0,z,0.05));
   siteGroup.add(co);
   siteGroup.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
 }
@@ -817,7 +863,7 @@ function buildPromos(){
   const ROT=Math.atan2(-PL.nb.x,-PL.nb.z),dummy=new THREE.Object3D();
   PL.blocks.forEach(b=>{
     const front=PL.at(b.al,-1.2);
-    const lab=labelSprite(b.ours?'KINDER':b.g.toUpperCase(),b.c,2.2);lab.position.set(front.x,3.2,front.z);promoGroup.add(lab);
+    const lab=labelSprite(b.ours?'KINDER':b.g.toUpperCase(),b.c,1.3);lab.position.set(front.x,3.8,front.z);promoGroup.add(lab);
     if(b.ours)return;
     const spots=[];
     for(let d=0.5;d<b.depth;d+=0.85)for(let a=-b.width/2+0.5;a<=b.width/2-0.4;a+=0.62)spots.push(PL.at(b.al+a+((Math.round(d/0.85)%2)?0.31:0),d));
@@ -835,12 +881,12 @@ function buildStatic(){
   routeObj=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),200,0.12,4,false),new THREE.MeshBasicMaterial({color:0xc4232b,transparent:true,opacity:.55}));
   scene.add(routeObj);
   barObj=new THREE.Mesh(new THREE.BoxGeometry(PL.Lb,0.06,0.3),new THREE.MeshBasicMaterial({color:0xff2d2d}));
-  barObj.position.set(PL.ctr.x,0.05,PL.ctr.z);barObj.rotation.y=SITE_ROT;scene.add(barObj);
+  barObj.position.set(PL.ctr.x,0.05,PL.ctr.z);barObj.rotation.y=-Math.atan2(PL.u.z,PL.u.x);scene.add(barObj);
   buildSite();
   buildPromos();
 }
 function rebuild(){
-  const c=cfg();S=c.len/BAR_PX;PATH=makePath();
+  const c=cfg();PATH=makePath();
   PL=plan(c,FAMS);buildStatic();renderInfo(PL);
   if(peopleGroup)scene.remove(peopleGroup);
   peopleGroup=new THREE.Group();
@@ -848,9 +894,11 @@ function rebuild(){
   scene.add(peopleGroup);
   $('time').max=PL.tEnd.toFixed(1);
   T=Math.min(T,PL.tEnd);
-  const ctr=W([415,185]);sun.target.position.set(ctr.x,0,ctr.z);sun.position.set(ctr.x-30,60,ctr.z+25);
-  update(T);setView(view);
+  const ctr=W(fromWall(0,12));sun.target.position.set(ctr.x,0,ctr.z);sun.position.set(ctr.x-30,60,ctr.z+25);
+  update(T);
+  if(firstBuild){firstBuild=false;setView(view);}
 }
+let firstBuild=true;
 
 function pose(p,t){
   const s=V*t-p.lon;
@@ -888,7 +936,7 @@ function update(t){
   if(pc.length>=2){const a=pc[0].q,b=pc[pc.length-1].q,len=Math.hypot(b.x-a.x,b.z-a.z)+0.4;
     banner.position.set((a.x+b.x)/2+((a.fx+b.fx)/2)*0.25,1.45,(a.z+b.z)/2+((a.fz+b.fz)/2)*0.25);
     banner.scale.set(len,1,1);banner.rotation.y=Math.atan2(a.fx,a.fz);}
-  $('phase').textContent=arrived===PL.P.length?'Barra lista · ¡a cantar!':arrived>0?`Formando barra · ${arrived}/${PL.P.length}`:started===0?'Ingreso':`Desfile · ${started}/${PL.P.length} en ruta`;
+  if(!drawMode)$('phase').textContent=arrived===PL.P.length?'Barra lista · ¡a cantar!':arrived>0?`Formando barra · ${arrived}/${PL.P.length}`:started===0?'Ingreso':`Desfile · ${started}/${PL.P.length} en ruta`;
   $('tlabel').textContent=fmtT(t);
   if(view==='follow'){const h=PL.P.reduce((m,p)=>p.lon<m.lon?p:m).q;
     controls.target.lerp(new THREE.Vector3(h.x,1,h.z),0.08);camera.position.lerp(new THREE.Vector3(h.x-h.fx*16+6,13,h.z-h.fz*16+6),0.05);}
@@ -896,12 +944,12 @@ function update(t){
 let view='3d';
 function setView(v){
   view=v;['top','3d','follow','jurado'].forEach(k=>$('v-'+k).setAttribute('aria-pressed',String(k===v)));
-  const ctr=W([414,200]);
+  const ctr=W(fromWall(0,13));
   controls.enabled=v!=='follow';
-  if(v==='top'){camera.position.set(ctr.x,80,ctr.z+0.01);controls.target.set(ctr.x,0,ctr.z);}
-  else if(v==='3d'){const c=W([415,185]);camera.position.set(c.x-NORTH.x*45-EAST.x*25,40,c.z-NORTH.z*45-EAST.z*25);controls.target.set(c.x,0,c.z);}
+  if(v==='top'){camera.position.set(ctr.x,55,ctr.z+0.01);controls.target.set(ctr.x,0,ctr.z);}
+  else if(v==='3d'){const c=W(fromWall(0,12));camera.position.set(c.x-NORTH.x*30-EAST.x*16,26,c.z-NORTH.z*30-EAST.z*16);controls.target.set(c.x,0,c.z);}
   else if(v==='jurado'){const j=W(SITE.stage),m=PL.mode==="columna"?PL.at(PL.blocks[0].al,8):PL.ctr;
-    const jx=j.x+EAST.x*-2.4-NORTH.x*4.4,jz=j.z+EAST.z*-2.4-NORTH.z*4.4;
+    const jx=j.x+EAST.x*-2.4-NORTH.x*2.6,jz=j.z+EAST.z*-2.4-NORTH.z*2.6;
     camera.position.set(jx,5.5,jz);controls.target.set(m.x,1.2,m.z);}
   else{const h=PL.P[0].q||{x:0,z:0,fx:0,fz:-1};camera.position.set(h.x-h.fx*16+6,13,h.z-h.fz*16+6);controls.target.set(h.x,1,h.z);}
   controls.update();
@@ -913,10 +961,56 @@ $('time').addEventListener('input',e=>{T=parseFloat(e.target.value);setPlaying(f
 ['i-pct','i-bat','i-len','i-face','i-mode','i-slot'].forEach(id=>$(id).addEventListener('change',rebuild));
 $('i-codes').addEventListener('change',e=>PL.P.forEach(p=>{const l=p.obj.getObjectByName('code');if(l)l.visible=e.target.checked;}));
 $('f-filter').addEventListener('input',()=>renderTable(PL));
+function overMsg(){const n=Object.keys(ST.over).length;$('over-msg').textContent=n?`${n} asignación${n>1?'es':''} manual${n>1?'es':''}`:'';}
+$('tbody').addEventListener('change',e=>{const s=e.target.closest('select[data-k]');if(!s)return;
+  if(s.value)ST.over[s.dataset.k]=s.value;else delete ST.over[s.dataset.k];saveState();overMsg();rebuild();});
+$('over-clear').addEventListener('click',()=>{ST.over={};saveState();overMsg();rebuild();});
+// remember every control
+const INPUTS=['i-pct','i-bat','i-len','i-face','i-mode','i-slot','i-codes','speed'];
+INPUTS.forEach(id=>{const el=$(id),v=ST.inputs[id];if(v!==undefined){if(el.type==='checkbox')el.checked=v;else el.value=v;}
+  el.addEventListener('change',()=>{ST.inputs[id]=el.type==='checkbox'?el.checked:el.value;saveState();});});
+
+/* ---------- drawing the route and the barra on the plan ---------- */
+let drawMode=null,draft=[],draftObj=null,downAt=null;
+const ray=new THREE.Raycaster(),groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+function groundPx(ev){const r=canvas.getBoundingClientRect(),v=new THREE.Vector2(((ev.clientX-r.left)/r.width)*2-1,-((ev.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(v,camera);const q=new THREE.Vector3();if(!ray.ray.intersectPlane(groundPlane,q))return null;return [q.x/S+CX,q.z/S+CY];}
+function drawDraft(){
+  if(draftObj)scene.remove(draftObj);draftObj=new THREE.Group();
+  const pts=draft.map(q=>{const w=W(q);return new THREE.Vector3(w.x,0.35,w.z);});
+  if(pts.length>1)draftObj.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:drawMode==='bar'?0xff2d2d:0x1d2f6b})));
+  pts.forEach(v=>{const m=new THREE.Mesh(G.ball,new THREE.MeshBasicMaterial({color:drawMode==='bar'?0xff2d2d:0x1d2f6b}));m.scale.setScalar(0.35);m.position.copy(v);draftObj.add(m);});
+  scene.add(draftObj);
+  $('phase').textContent=drawMode==='bar'?(draft.length?'Toca el otro extremo de la barra':'Toca un extremo de la línea de barra'):`Ruta: ${draft.length} puntos · doble clic, Enter o "Terminar" para cerrar · Esc cancela`;
+}
+function setDrawButtons(){
+  $('d-route').setAttribute('aria-pressed',String(drawMode==='route'));$('d-bar').setAttribute('aria-pressed',String(drawMode==='bar'));
+  $('d-route').textContent=drawMode==='route'?'Terminar ruta':'Dibujar ruta';$('d-bar').textContent=drawMode==='bar'?'Cancelar':'Dibujar barra';
+}
+function startDraw(mode){draft=[];drawMode=mode;setPlaying(false);setView('top');controls.enableRotate=false;setDrawButtons();drawDraft();}
+function cancelDraw(){drawMode=null;draft=[];if(draftObj)scene.remove(draftObj);draftObj=null;controls.enableRotate=true;setDrawButtons();}
+function finishDraw(){
+  const pts=draft.filter((q,i)=>!i||Math.hypot(q[0]-draft[i-1][0],q[1]-draft[i-1][1])>2).map(q=>[Math.round(q[0]*10)/10,Math.round(q[1]*10)/10]);
+  if(drawMode==='route'&&pts.length>=2){ROUTE=pts;ST.route=pts;}
+  if(drawMode==='bar'&&pts.length===2){BARLINE=pts;ST.bar=pts;
+    const m=Math.round(Math.hypot(pts[1][0]-pts[0][0],pts[1][1]-pts[0][1])*S*2)/2;$('i-len').value=m;ST.inputs['i-len']=String(m);}
+  saveState();cancelDraw();rebuild();
+}
+canvas.addEventListener('pointerdown',e=>{downAt=[e.clientX,e.clientY];});
+canvas.addEventListener('pointerup',e=>{if(!drawMode||!downAt)return;if(Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1])>6)return;
+  const q=groundPx(e);if(!q)return;draft.push(q);drawDraft();if(drawMode==='bar'&&draft.length===2)finishDraw();});
+canvas.addEventListener('dblclick',()=>{if(drawMode==='route')finishDraw();});
+addEventListener('keydown',e=>{if(!drawMode)return;if(e.key==='Escape')cancelDraw();if(e.key==='Enter'&&drawMode==='route')finishDraw();});
+$('d-route').addEventListener('click',()=>drawMode==='route'?finishDraw():startDraw('route'));
+$('d-bar').addEventListener('click',()=>drawMode==='bar'?cancelDraw():startDraw('bar'));
+$('d-reset').addEventListener('click',()=>{cancelDraw();delete ST.route;delete ST.bar;ROUTE=ROUTE_PX.map(q=>[...q]);BARLINE=null;$('i-len').value=24;ST.inputs['i-len']='24';saveState();rebuild();});
+// keep the moment and the camera too
+function rememberView(){ST.T=T;ST.view=view;saveNow();}
+addEventListener('pagehide',rememberView);document.addEventListener('visibilitychange',()=>{if(document.hidden)rememberView();});
 function applyList(text,save){
   const f=parseFamilies(text);
   if(f.filter(x=>!x.absent).length<4){$('fam-msg').textContent='La lista necesita al menos 4 familias que asistan.';return;}
-  FAMS=f;if(save)store.set('desfile-familias-v3',text);
+  FAMS=f;if(save){store.set('desfile-familias-v3',text);store.del('desfile-familias-borrador');}
   $('fam-msg').textContent=`${f.length} familias leídas, ${f.filter(x=>!x.absent).length} asisten.`;
   rebuild();
 }
@@ -932,8 +1026,11 @@ function loop(now){
   update(T);controls.update();renderer.render(scene,camera);requestAnimationFrame(loop);
 }
 $('fam-list').value=store.get('desfile-familias-v3')||sampleFamilies();
-FAMS=parseFamilies($('fam-list').value);
-T=60;
+{const d=store.get('desfile-familias-borrador');if(d&&d!==$('fam-list').value){$('fam-list').value=d;$('fam-msg').textContent='Recuperé cambios sin aplicar de la lista. Pulsa "Aplicar lista" para usarlos.';}}
+$('fam-list').addEventListener('input',e=>store.set('desfile-familias-borrador',e.target.value));
+FAMS=parseFamilies(store.get('desfile-familias-v3')||sampleFamilies());
+T=typeof ST.T==='number'?ST.T:60;if(ST.view)view=ST.view;
+overMsg();
 rebuild();resize();
 // #barra opens on the finished formation seen from the jury
 if(location.hash==='#barra'){T=PL.tEnd;update(T);setView('jurado');}
