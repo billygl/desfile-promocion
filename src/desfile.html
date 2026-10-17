@@ -152,6 +152,8 @@ li{max-width:72ch}
 .sync{display:inline-flex;align-items:center;gap:8px;margin:8px 0 0;padding:4px 10px;border:1px solid var(--line);border-radius:999px;font-size:.8rem;color:var(--muted);background:var(--surface)}
 .sync.wait::before{content:"";width:10px;height:10px;border:2px solid var(--line);border-top-color:var(--fg);border-radius:50%;animation:spin .8s linear infinite}
 .sync.ok::before{content:"●";color:#2e9d5b}.sync.err::before{content:"●";color:#c4232b}
+.sync{cursor:pointer;font:inherit;font-size:.8rem;text-align:left}.sync:not(.wait)::after{content:"↻";font-size:1rem;line-height:1;color:var(--fg)}
+.sync:hover{border-color:var(--fg)}
 @keyframes spin{to{transform:rotate(360deg)}}
 .ro-only,.admin-only{display:none}.ro .ro-only{display:block}body:not(.ro) .admin-only{display:flex}
 .ro #att-reset,.ro #task-add,.ro #task-restore,.ro #over-clear,.ro #fam-apply,.ro #fam-reset,.ro [data-del],.ro #d-route,.ro #d-bar,.ro #d-reset{display:none}
@@ -240,7 +242,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
     <div class="eyebrow">Olimpiadas · Colegio María Alvarado</div>
     <h1>Desfile y barra de la promoción</h1>
     <p class="lede">Simulación 3D sobre el plano del colegio: la columna recorre la ruta roja, pasa frente al escenario y forma la barra mirando al jurado. Cada familia aparece solo con su código de iniciales.</p>
-    <p class="sync wait" data-sync>Cargando asignaciones de la hoja…</p>
+    <button class="sync wait" data-sync title="Actualizar">Mostrando lo guardado · actualizando…</button>
     <a class="encuesta" id="encuesta" href="/encuesta/" hidden><i>⭐</i><span></span><b>Responder →</b></a>
     <script>(function(){var a=document.getElementById('encuesta'),K='encuesta-activa';
 function show(x){if(x&&x.titulo){a.querySelector('span').textContent=x.titulo;a.hidden=false;}else a.hidden=true;}
@@ -325,7 +327,7 @@ fetch('https://script.google.com/macros/s/AKfycbzyqLczr6k6k25Wl8O6g35x6anEPBhXnC
   <details class="card" id="s-tareas" open>
     <summary><h2>Tareas y roles</h2><span class="hint" id="task-prog"></span></summary>
     <p>Quién se encarga de cada cosa. En los roles, los responsables salen solos de la propuesta; si hace falta, escribe otro encima. Marca cada tarea cuando quede lista. Lo asigna el administrador y todos ven lo mismo al momento.</p>
-    <p class="sync wait" data-sync>Cargando asignaciones de la hoja…</p>
+    <button class="sync wait" data-sync title="Actualizar">Mostrando lo guardado · actualizando…</button>
     <div class="row"><button class="btn" id="task-add">Agregar tarea</button><button class="btn" id="task-copy">Copiar lista para WhatsApp</button><button class="btn" id="task-restore" hidden>Volver a mostrar las quitadas</button><span class="note" id="task-msg"></span></div>
     <ol class="tasks" id="tasks"></ol>
   </details>
@@ -349,7 +351,7 @@ fetch('https://script.google.com/macros/s/AKfycbzyqLczr6k6k25Wl8O6g35x6anEPBhXnC
 
 <aside id="att-panel" class="drawer" aria-label="Asistencia" hidden>
   <div class="ph"><h2>Asistencia</h2><button class="btn" id="att-close">Cerrar</button></div>
-  <p class="sync wait" data-sync>Cargando asistencia de la hoja…</p>
+  <button class="sync wait" data-sync title="Actualizar">Mostrando lo guardado · actualizando…</button>
   <p class="note ro-only" id="att-ro" style="margin:0">Solo el administrador cambia la asistencia.</p>
   <label class="chk admin-only" for="att-live" style="gap:8px;align-items:center;font-size:.88rem"><input type="checkbox" id="att-live"> Publicar la asistencia real (si no, todos ven el plan con todas las familias)</label>
   <div class="key" id="att-sum"></div>
@@ -1394,7 +1396,7 @@ function update(t){
   if(!drawMode)$('phase').textContent=(!playing&&Math.abs(t-PL.tInit)<0.05?'Inicio · todos juntos antes de entrar al patio':(arrived===PL.P.length?'Barra lista · ¡a cantar!':arrived>0?`Formando barra · ${arrived}/${PL.P.length}`:started===0?'Ingreso':`Desfile · ${started}/${PL.P.length} en ruta`));
   $('tlabel').textContent=fmtT(t-PL.tInit);
   // while ▶ Desfile plays the camera glides with the group, keeping its angle and zoom
-  if(following&&playing){const qs=PL.P.map(p=>p.q).filter(Boolean);
+  if(following&&playing){const qs=leadQs();
     if(qs.length){const d=new THREE.Vector3(qs.reduce((a,q)=>a+q.x,0)/qs.length-controls.target.x,0,qs.reduce((a,q)=>a+q.z,0)/qs.length-controls.target.z).multiplyScalar(0.06);
       controls.target.add(d);camera.position.add(d);}}
 }
@@ -1426,8 +1428,11 @@ function frameRoute(){if(!ROUTE)return;const w=ROUTE.map(W),cx=w.reduce((a,q)=>a
   view='3d';['top','3d','jurado'].forEach(k=>$('v-'+k).setAttribute('aria-pressed',String(k==='3d')));controls.enabled=true;
   camera.position.set(cx-NORTH.x*30-EAST.x*16,30,cz-NORTH.z*30-EAST.z*16);controls.target.set(cx,0,cz);controls.update();}
 // center the camera on where everyone is now, keeping the aerial view or using the 3D angle
-function focusCrowd(){const qs=PL.P.map(p=>p.q).filter(Boolean);if(!qs.length)return;
-  const cx=qs.reduce((a,q)=>a+q.x,0)/qs.length,cz=qs.reduce((a,q)=>a+q.z,0)/qs.length,r=Math.max(6,...qs.map(q=>Math.hypot(q.x-cx,q.z-cz)));
+// the banner leads the parade: follow it (whole group if nobody carries it)
+function leadQs(){const b=PL.P.filter(p=>p.role==='pancarta'&&p.q).map(p=>p.q);return b.length?b:PL.P.map(p=>p.q).filter(Boolean);}
+// lead=true: centred on the banner with a closer zoom (start of ▶ Desfile)
+function focusCrowd(lead){const qs=lead?leadQs():PL.P.map(p=>p.q).filter(Boolean);if(!qs.length)return;
+  const cx=qs.reduce((a,q)=>a+q.x,0)/qs.length,cz=qs.reduce((a,q)=>a+q.z,0)/qs.length,r=lead?12:Math.max(6,...qs.map(q=>Math.hypot(q.x-cx,q.z-cz)));
   if(view==='top'){camera.position.set(cx,Math.max(30,r*2.6),cz+0.01);}
   else{view='3d';['top','3d','jurado'].forEach(k=>$('v-'+k).setAttribute('aria-pressed',String(k==='3d')));controls.enabled=true;
     const k=Math.max(1,r/12);camera.position.set(cx-NORTH.x*24*k-EAST.x*12*k,20*k,cz-NORTH.z*24*k-EAST.z*12*k);}
@@ -1440,7 +1445,7 @@ $('st-2').addEventListener('click',()=>playStage(2));
 function setPlaying(v){playing=v;if(!v)following=false;$('play').setAttribute('aria-pressed',String(v));$('play').textContent=v?'❚❚ Pausa':'▶ Desfile';}
 // ▶ Desfile always starts from the initial position, framed by the camera
 $('play').addEventListener('click',()=>{if(playing){setPlaying(false);return;}
-  T=PL.tInit;stageEnd=PL.tEnd;$('time').value=T;update(T);focusCrowd();setPlaying(true);following=true;});
+  T=PL.tInit;stageEnd=PL.tEnd;$('time').value=T;update(T);focusCrowd(true);setPlaying(true);following=true;});
 $('time').addEventListener('input',e=>{T=parseFloat(e.target.value);setPlaying(false);update(T);});
 ['i-bat','i-len','i-face','i-mode','i-slot','i-bloques'].forEach(id=>$(id).addEventListener('change',rebuild));
 $('i-emoji').addEventListener('change',()=>{if(PL)renderInfo(PL);});
@@ -1648,6 +1653,8 @@ $('need-draw').addEventListener('click',()=>{toggleConfig();$('adv').open=true;$
 // Everyone reads it; only the admin key writes. Polls send just the revision number and get a tiny
 // "same" answer unless something changed. Private names never leave this browser.
 const API='https://script.google.com/macros/s/AKfycbw7uLgeQv9NBYLDy7YUlmmrvhmrT7EedAqtusaBKscqYXW4SeaOBK_Tsg1425ArSg/exec';
+// last attendance saved in the sheet, bundled so the page works (and stays as a demo) without waiting for Google
+const SNAPSHOT={"rev":150,"at":"2026-10-17T23:51:29.988Z","data":{"att":{"AnB":{"papa":"si","mama":"si","h1":"si"},"DG":{"papa":"no","mama":"no","h1":"no"},"GH":{"papa":"si","mama":"si","h1":"si"},"GL":{"papa":"si","mama":"si","h1":"si"},"LCh":{"papa":"si","mama":"no","h1":"si","h2":"si"},"SF":{"papa":"no","mama":"si","h1":"si"},"SS":{"papa":"si","mama":"si","h1":"si"},"DVG":{"papa":"si","h1":"si","mama":"si"},"FC":{"papa":"si","mama":"si","h1":"si"},"HeC":{"papa":"si","mama":"no","h1":"si"},"MF":{"papa":"si","mama":"si","h1":"si"},"MV":{"papa":"no","mama":"no","h1":"no"},"NC":{"papa":"no","mama":"si","h1":"si"},"OS":{"papa":"si","mama":"si","h1":"si"},"SCM":{"papa":"si","mama":"si","h1":"si"},"VC":{"papa":"si","mama":"si","h1":"si"},"CaiM":{"papa":"si","mama":"si","h1":"si"},"CB":{"papa":"no","mama":"no","h1":"no"},"GJ":{"papa":"si","mama":"si","h1":"si"},"CE":{"papa":"si","mama":"si","h1":"si"},"CasM":{"papa":"si","mama":"si","h1":"si"},"CL":{"papa":"si","mama":"si","h1":"si"},"CV":{"papa":"si","mama":"si","h1":"si"},"GA":{"papa":"si","mama":"si","h1":"si"},"HR":{"mama":"si","h1":"si"},"OV":{"papa":"si","mama":"si","h1":"si"},"RD":{"papa":"si","mama":"si","h1":"si"},"RiF":{"papa":"si","h1":"si","mama":"si"},"BV":{"mama":"si","h1":"si","papa":"no"},"ChA":{"papa":"si","mama":"si","h1":"si"},"CN":{"mama":"si","h1":"si","papa":"si"},"RR":{"mama":"si","papa":"si","h1":"no"},"PR":{"h1":"si","papa":"no","mama":"no"},"SL":{"papa":"si","mama":"si","h1":"si"},"GN":{"papa":"si","h1":"si","mama":"no"},"BG":{"papa":"si","mama":"si","h1":"si"},"GV":{"mama":"si","h1":"si","papa":"no"},"HuC":{"h1":"si","papa":"si","mama":"si"},"MG":{"papa":"si","h1":"si","mama":"no"},"PAp":{"papa":"si","mama":"si","h1":"si"},"SE":{"papa":"si","mama":"si","h1":"si"},"MS":{"papa":"si","h1":"si"},"PAn":{"mama":"no","papa":"no","h1":"no"},"AmB":{"papa":"si","mama":"si","h1":"si"},"GT":{"papa":"si","mama":"si","h1":"si"},"LM":{"papa":"no","mama":"si","h1":"si"},"PV":{"papa":"si","mama":"si","h1":"si"},"RuF":{"papa":"si","mama":"si","h1":"si"},"TP":{"h1":"si","mama":"si","papa":"no"},"BF":{"papa":"si","mama":"si","h1":"si"},"BJ":{"papa":"no","mama":"no","h1":"no"},"FY":{"h1":"si","papa":"no","mama":"no"},"LS":{"papa":"si","h1":"si","mama":"no"},"MQ":{"papa":"si","mama":"si","h1":"si"},"AO":{"papa":"no","mama":"no","h1":"no"},"TA":{"papa":"no","mama":"no","h1":"no"},"TB":{"papa":"si","mama":"si","h1":"si"}},"attPending":true,"attLive":true,"over":{},"tasks":{},"customTasks":[],"hiddenTasks":[],"inputs":{},"route":null,"bar":null,"fams":null}};
 const SYNC_KEY='desfile-remoto-v1',KEY_KEY='desfile-clave',POLL_MS=30000;
 var ADMIN=(()=>{const q=new URLSearchParams(location.search),u=q.get('clave');
   if(u){store.set(KEY_KEY,u);q.delete('clave');history.replaceState(null,'',location.pathname+(q.toString()?'?'+q:'')+location.hash);}
@@ -1658,6 +1665,7 @@ function shared(){return {att:ST.att||{},attPending:ST.attPending!==false,attLiv
 const hhmm=s=>{const d=s?new Date(s):new Date();return isNaN(d)?'':d.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});};
 function syncMsg(t,cls){document.querySelectorAll('[data-sync]').forEach(el=>{el.textContent=t;el.className='sync '+(cls||'');});}
 function okMsg(){syncMsg((ADMIN?'Administrador · ':'')+'Al día con la hoja'+(LAST_AT?' · '+hhmm(LAST_AT):''),'ok');}
+document.addEventListener('click',e=>{if(e.target.closest('[data-sync]'))pull(true);});
 function applyShared(d,render){if(!d)return;
   ST.att=d.att||{};ST.attPending=d.attPending!==false;ST.attLive=d.attLive===true;ST.over=d.over||{};ST.tasks=d.tasks||{};ST.customTasks=d.customTasks||[];ST.hiddenTasks=d.hiddenTasks||[];
   ST.inputs=Object.assign({},d.inputs||{},ST.inputs&&ST.inputs.speed!==undefined?{speed:ST.inputs.speed}:{});INPUTS.forEach(id=>{const el=$(id),v=ST.inputs[id];if(v!==undefined){if(el.type==='checkbox')el.checked=v;else el.value=v;}});
@@ -1668,7 +1676,7 @@ function applyShared(d,render){if(!d)return;
   if(render){overMsg();rebuild();if(!apanel.hidden)renderAtt();}}
 const hasLocal=()=>{const d=shared();return !!(Object.keys(d.att).length||Object.keys(d.over).length||Object.keys(d.tasks).length||d.customTasks.length||d.fams||d.route||d.bar);};
 const pending=()=>synced!==null&&JSON.stringify(shared())!==synced;
-async function pull(){if(pulling||!API.startsWith('http')||(ADMIN&&pending()))return;pulling=true;
+async function pull(manual){if(manual===true&&!pulling)syncMsg('Mostrando lo guardado · actualizando…','wait');if(pulling||!API.startsWith('http')||(ADMIN&&pending()))return;pulling=true;
   try{const r=await fetch(API+'?rev='+REV+(ADMIN?'&key='+encodeURIComponent(ADMIN):''),{cache:'no-store'});const j=await r.json();
     if(!j.same){REV=j.rev;LAST_AT=j.at||'';
       // first time the admin syncs a device that has its own assignments: ask which copy wins
@@ -1679,7 +1687,7 @@ async function pull(){if(pulling||!API.startsWith('http')||(ADMIN&&pending()))re
     // empty sheet (revision 0): the admin's first visit fills it
     else if(synced===null&&ADMIN&&REV===0){synced='';queuePush();}
     if(!pushTimer)okMsg();}
-  catch(e){syncMsg('Sin conexión con la hoja; se muestra lo último guardado.','err');}
+  catch(e){syncMsg('Sin conexión; se muestra lo último guardado'+(LAST_AT?' ('+hhmm(LAST_AT)+')':''),'err');}
   pulling=false;}
 function queuePush(){if(!ADMIN||synced===null||!API.startsWith('http')||!pending())return;
   syncMsg('Guardando en la hoja…','wait');clearTimeout(pushTimer);pushTimer=setTimeout(push,1200);}
@@ -1703,9 +1711,9 @@ $('admin-out').addEventListener('click',()=>{setAdmin('');REV=0;pull();});
 setInterval(()=>{if(!document.hidden)pull();},POLL_MS);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull();});
 document.body.classList.toggle('ro',!ADMIN);
-{const c=(()=>{try{return JSON.parse(store.get(SYNC_KEY))}catch(e){return null}})();if(c&&c.data){REV=c.rev;LAST_AT=c.at||'';applyShared(c.data,false);}}
+{let c=(()=>{try{return JSON.parse(store.get(SYNC_KEY))}catch(e){return null}})();if(!c||!c.data||(c.rev||0)<SNAPSHOT.rev)c=SNAPSHOT;REV=c.rev;LAST_AT=c.at||'';applyShared(c.data,false);}
 overMsg();
-rebuild();resize();setAdmin(ADMIN);pull();
+rebuild();resize();setAdmin(ADMIN);pull(true);
 // #barra opens on the finished formation seen from the jury
 if(location.hash==='#barra'){T=PL.tEnd;update(T);setView('jurado');}
 if(location.hash==='#aerea'){T=PL.tEnd;update(T);setView('top');}
