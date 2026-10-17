@@ -337,7 +337,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
       </ul>
       <p class="note">Escala: 0.135 m por píxel del plano, ajustada al contorno del colegio en OpenStreetMap (±10%). La ruta y la línea de barra se redibujan con los botones del visor.</p>
     </details>
-  <footer class="ver">Versión 43 · 2026-10-17 08:42</footer>
+  <footer class="ver">Versión 44 · 2026-10-17 12:25</footer>
 </div>
 
 <aside id="att-panel" class="drawer" aria-label="Asistencia" hidden>
@@ -644,7 +644,7 @@ function plan(c,fams){
   att.forEach(f=>{
     const kids=f.kid.filter(k=>k.role==='nino');
     const par=f.par.filter(p=>['padre','muneco','pompon','baston'].includes(p.role));
-    const gs=[...new Set(f.kid.map(k=>k.grade))];
+    let gs=[...new Set(f.kid.map(k=>k.grade))];if(!gs.length)gs=[f.grades[0]]; // parents coming without their kids still stand with their grade
     const byG={};gs.forEach(g=>byG[g]={f,g,par:[],kids:[]});
     kids.forEach(k=>byG[k.grade].kids.push(k));
     par.forEach((p,i)=>{const g=gs[i%gs.length];byG[g].par.push(p);p.grade=g;});
