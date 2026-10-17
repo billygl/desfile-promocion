@@ -68,6 +68,21 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 td select{font:inherit;font-size:.82rem;padding:3px 4px;border:1px solid var(--line);border-radius:5px;background:var(--surface);color:var(--fg);max-width:190px;width:100%}
 td select.manual{border-color:var(--accent);font-weight:700}
 [hidden]{display:none!important}
+.tasks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.task{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:start;background:var(--surface)}
+.task>input[type=checkbox]{width:20px;height:20px;margin-top:2px;accent-color:var(--accent)}
+.task.done{background:var(--bg)}
+.task.done .tt{text-decoration:line-through;color:var(--muted)}
+.task .th{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0}
+.task .tt{font-weight:700;min-width:0}
+.task input.tt{font:inherit;font-weight:700;border:0;border-bottom:1px dashed var(--line);background:transparent;color:var(--fg);padding:2px 0;flex:1 1 160px;min-width:0}
+.task .kind{font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 7px}
+.task .x{margin-left:auto;font-size:.75rem;color:var(--muted);padding:2px 6px}
+.task .auto{font-family:var(--f-mono);font-size:.78rem;color:var(--fg);overflow-wrap:anywhere}
+.task .fields{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px}
+.task .fields input{font:inherit;font-size:.85rem;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg);min-width:0}
+.task .fields .full{grid-column:1/-1}
+@media (max-width:600px){.task .fields{grid-template-columns:1fr}}
 html{scroll-behavior:smooth}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 .jump{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin:-20px calc(-1*max(16px,env(safe-area-inset-right,0px))) 0 calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px))}
@@ -146,8 +161,8 @@ tr.fam-start td{border-top:2px solid var(--line)}
 </head>
 <body>
 <nav class="jump" aria-label="Secciones"><div class="in">
-  <a href="#s-resumen">Resumen</a><a href="#s-visor">Visor 3D</a><a href="#s-desfile">Plano desfile</a><a href="#s-barra">Plano barra</a><a href="#s-tabla">Por familia</a><a href="#s-criterios">Criterios</a>
-  <select id="jump-sel" aria-label="Ir a la sección"><option value="">Ir a…</option><option value="#s-resumen">Resumen</option><option value="#s-visor">Visor 3D</option><option value="#s-desfile">Plano desfile</option><option value="#s-barra">Plano barra</option><option value="#s-tabla">Por familia</option><option value="#s-criterios">Criterios</option></select>
+  <a href="#s-resumen">Resumen</a><a href="#s-visor">Visor 3D</a><a href="#s-desfile">Plano desfile</a><a href="#s-barra">Plano barra</a><a href="#s-tabla">Por familia</a><a href="#s-tareas">Tareas</a><a href="#s-criterios">Criterios</a>
+  <select id="jump-sel" aria-label="Ir a la sección"><option value="">Ir a…</option><option value="#s-resumen">Resumen</option><option value="#s-visor">Visor 3D</option><option value="#s-desfile">Plano desfile</option><option value="#s-barra">Plano barra</option><option value="#s-tabla">Por familia</option><option value="#s-tareas">Tareas</option><option value="#s-criterios">Criterios</option></select>
   <button class="help act" id="go-desfile" style="margin-left:auto"><span class="l">▶ Ver desfile</span><span class="s">▶ Desfile</span></button>
   <button class="help act" id="go-barra"><span class="l">Ver barra</span><span class="s">Barra</span></button>
   <button class="help" id="open-config" title="Tecla C"><span class="l">Configuración</span><span class="s">Config.</span></button>
@@ -217,6 +232,13 @@ tr.fam-start td{border-top:2px solid var(--line)}
     <div class="row"><input id="f-filter" type="search" placeholder="Buscar código…" aria-label="Buscar código"><button class="btn" id="over-clear">Quitar asignaciones manuales</button><span class="note" id="over-msg"></span></div>
     <div class="key"><span>👨 papá · 👩 mamá · 🧒 hijo/a</span><span><b>F12 Iz</b> desfile: fila 12 desde la cabeza, lado izquierdo de la marcha</span><span><b>F3 De</b> barra: fila 3 de la columna, lado derecho visto desde el jurado</span><span><b>L1</b> letras · <b>Del</b> delante de la línea · <b>Bat</b> batucada · <b>Atr</b> al fondo · <b>Ce</b> centro</span></div>
     <div class="tablewrap"><table><thead><tr><th>Código</th><th aria-label="Integrante">👪</th><th>Rol</th><th>Desfile</th><th>Barra</th></tr></thead><tbody id="tbody"></tbody></table></div>
+  </details>
+
+  <details class="card" id="s-tareas" open>
+    <summary><h2>Tareas y roles</h2><span class="hint" id="task-prog"></span></summary>
+    <p>Quién se encarga de cada cosa. En los roles, los responsables salen solos de la propuesta; si hace falta, escribe otro encima. Marca cada tarea cuando quede lista. Todo se guarda en este navegador.</p>
+    <div class="row"><button class="btn" id="task-add">Agregar tarea</button><button class="btn" id="task-copy">Copiar lista para WhatsApp</button><button class="btn" id="task-restore" hidden>Volver a mostrar las quitadas</button><span class="note" id="task-msg"></span></div>
+    <ol class="tasks" id="tasks"></ol>
   </details>
 
     <details class="card" id="s-criterios" open>
@@ -681,7 +703,7 @@ function renderInfo(pl){
   if(pl.mode==='columna')$('barra-sum').innerHTML=`La línea de <b>${pl.Lb.toFixed(1)} m</b> la comparten las 3 promociones: <b>Kinder (nosotros, verde)</b>, Prekinder (rosado) y Nursery (azul), cada una en una columna de ${(pl.Lb/3).toFixed(1)} m mirando al jurado. Nuestra columna: escudo, pancarta, Águila y antorcha delante; los 2 que dirigen en las esquinas; LOVE HONOR SERVICE al frente; luego <b>${pl.blocks[0].rows} filas de ${pl.blocks[0].per} familias</b> (${pl.GRADES.join(', ')}), cada hijo entre su papá y su mamá; atrás la batucada y el dragón alzado. Prekinder y Nursery (con sus 4 misses cada una) se dibujan solo como referencia. Nuestras 6 misses, 2 por sección, van en los bordes de las filas de su sección.`;
   else if(pl.mode==='grados')$('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela al escenario (Jr. Gregorio Paredes) y mirando al jurado. Delante: escudo, pancarta, Águila, antorcha y los 2 que dirigen. Fila 1: <b>LOVE HONOR SERVICE</b>. Detrás, <b>una columna por grado</b> (${pl.blocks.map(b=>b.g+': '+b.rows+' filas').join(', ')}), lado a lado, de ${(pl.Lb/pl.blocks.length).toFixed(1)} m de ancho cada una: el hijo al centro y sus padres a los costados, como en el desfile. El dragón se alza detrás de todos y la batucada va al costado.`;
   else $('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela al escenario (Jr. Gregorio Paredes) y mirando al jurado. Delante: escudo, pancarta, Águila y antorcha. Fila 1: <b>LOVE HONOR SERVICE</b>. Luego ${kr.length} filas de niños (${kr.join(' + ')}) y ${pr.length} de padres (${pr.join(' + ')}), en tresbolillo para que todos vean. Batucada al costado este.`;
-  drawParade(pl);drawBarra(pl);renderTable(pl);
+  drawParade(pl);drawBarra(pl);renderTable(pl);renderTasks(pl);
 }
 const ABBR={miss:'MS',aguila:'ÁG',antorcha:'AN',pancarta:'PA',escudo:'ES',letra:'L',bat:'BT',dragon:'DR',muneco:'MU',pompon:'PO',baston:'BA',direccion:'DI'};
 const gtxt=p=>p.kid?'':p.g==='papa'?' pa':' ma';
@@ -771,6 +793,63 @@ function renderTable(pl){
     return `<tr${st}><td class="code">${code}</td><td class="who">${emo(p)}</td><td>${sel}</td><td class="pos">F${p.prow} ${side(p)}</td><td class="pos">${bar(p)}</td></tr>`;}).join('')
     +pl.fams.filter(f=>(f.absent||f.est)&&(!q||f.code.toUpperCase().includes(q))).map(f=>`<tr class="fam-start"><td class="code">${esc(f.code)}</td><td colspan="4">${f.est?'No asiste (estimado)':'No asiste'}</td></tr>`).join('');
 }
+
+/* ---------- tasks: one list for roles and logistics ---------- */
+const LOG_DEFAULT=['Dirigir armado e inflado de globos','Trasladar torres y globos al colegio','Pagar el dragón','Pagar la batucada','Recibir el dragón','Parlante y micrófonos','Repartir refrigerio'];
+let TASKS_CUR=[];
+function roleTasks(pl){
+  const who=p=>p.role==='miss'?'Miss '+p.grade:p.kid?p.fam+' (hijo/a)':p.fam+(p.g==='papa'?' papá':' mamá');
+  const of=r=>pl.P.filter(p=>p.role===r),out=[];
+  const add=(id,title,ps)=>out.push({id,title,auto:ps.map(who).join(', ')||'sin asignar'});
+  const dir=of('direccion');
+  add('r-canto','Dirigir el canto',dir.slice(0,1));
+  add('r-coreo','Dirigir la coreografía',dir.slice(1,2));
+  add('r-aguila','Águila (botarga de globos)',of('aguila'));
+  add('r-antorcha','Antorcha',of('antorcha'));
+  add('r-escudo','Escudo',of('escudo'));
+  add('r-pancarta','Pancarta',of('pancarta'));
+  WORDS.forEach(w=>{const ps=of('letra').filter(p=>p.word===w);out.push({id:'r-letras-'+w,title:'Letras '+w,auto:ps.map(p=>p.letter+' '+p.fam).join(' · ')||'sin asignar'});});
+  add('r-bat','Batucada',of('bat'));
+  add('r-dragon','Cargar el dragón',of('dragon'));
+  add('r-muneco','Muñecos',of('muneco'));
+  add('r-pompon','Pompones supremos',of('pompon'));
+  add('r-baston','Bastones',of('baston'));
+  add('r-miss','Misses (2 por sección)',of('miss'));
+  return out;
+}
+function renderTasks(pl){
+  ST.tasks=ST.tasks||{};ST.customTasks=ST.customTasks||[];ST.hiddenTasks=ST.hiddenTasks||[];
+  const all=[...roleTasks(pl).map(x=>({...x,kind:'Rol'})),
+    ...LOG_DEFAULT.map((title,i)=>({id:'l'+i,title,kind:'Logística'})).filter(x=>!ST.hiddenTasks.includes(x.id)),
+    ...ST.customTasks.map(x=>({...x,kind:'Otra',custom:true}))];
+  TASKS_CUR=all;
+  $('tasks').innerHTML=all.map(x=>{const s=ST.tasks[x.id]||{};
+    return `<li class="task${s.done?' done':''}" data-id="${esc(x.id)}"><input type="checkbox" data-f="done"${s.done?' checked':''} aria-label="Lista: ${esc(x.title)}"><div style="min-width:0">
+      <div class="th">${x.custom?`<input class="tt" data-f="title" value="${esc(x.title)}" placeholder="Escribe la tarea" aria-label="Tarea">`:`<span class="tt">${esc(x.title)}</span>`}<span class="kind">${x.kind}</span>${x.kind!=='Rol'?'<button class="x" data-del>Quitar</button>':''}</div>
+      ${x.auto?`<div class="auto">${esc(x.auto)}</div>`:''}
+      <div class="fields"><input data-f="resp" value="${esc(s.resp||'')}" placeholder="${x.kind==='Rol'?'Otro responsable (opcional)':'Responsable (código)'}" aria-label="Responsable"><input data-f="when" value="${esc(s.when||'')}" placeholder="Fecha y hora" aria-label="Fecha y hora"><input class="full" data-f="note" value="${esc(s.note||'')}" placeholder="Comentario" aria-label="Comentario"></div>
+    </div></li>`;}).join('');
+  $('task-restore').hidden=!ST.hiddenTasks.length;
+  taskProgress();
+}
+function taskProgress(){const n=TASKS_CUR.filter(x=>(ST.tasks[x.id]||{}).done).length;$('task-prog').textContent=`${n} de ${TASKS_CUR.length} listas`;}
+$('tasks').addEventListener('input',e=>{const li=e.target.closest('.task'),f=e.target.dataset.f;if(!li||!f)return;const id=li.dataset.id;
+  if(f==='title'){const c=ST.customTasks.find(x=>x.id===id);if(c)c.title=e.target.value;}
+  else{const s=ST.tasks[id]=ST.tasks[id]||{};s[f]=f==='done'?e.target.checked:e.target.value;}
+  if(f==='done'){li.classList.toggle('done',e.target.checked);taskProgress();}
+  saveState();});
+$('tasks').addEventListener('click',e=>{const b=e.target.closest('[data-del]');if(!b)return;const id=b.closest('.task').dataset.id;
+  if(ST.customTasks.some(x=>x.id===id))ST.customTasks=ST.customTasks.filter(x=>x.id!==id);else ST.hiddenTasks.push(id);
+  delete ST.tasks[id];saveState();renderTasks(PL);});
+$('task-add').addEventListener('click',()=>{ST.customTasks.push({id:'c'+Date.now(),title:''});saveState();renderTasks(PL);
+  const ins=$('tasks').querySelectorAll('input.tt');if(ins.length)ins[ins.length-1].focus();});
+$('task-restore').addEventListener('click',()=>{ST.hiddenTasks=[];saveState();renderTasks(PL);});
+$('task-copy').addEventListener('click',()=>{
+  const lines=TASKS_CUR.map((x,i)=>{const s=ST.tasks[x.id]||{};return `${s.done?'✅':'⬜'} ${i+1}. ${x.title||'(sin título)'} — ${s.resp||x.auto||'sin responsable'}${s.when?' — '+s.when:''}${s.note?' — '+s.note:''}`;});
+  const text='Tareas del desfile\n'+lines.join('\n');
+  const done=()=>{$('task-msg').textContent='Lista copiada. Pégala en WhatsApp.';};
+  try{navigator.clipboard.writeText(text).then(done,()=>{$('task-msg').textContent='No se pudo copiar: tu navegador no lo permitió.';});}catch(err){$('task-msg').textContent='No se pudo copiar: tu navegador no lo permitió.';}
+});
 
 /* ---------- 3D ---------- */
 const canvas=$('c3d');
