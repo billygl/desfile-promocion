@@ -337,7 +337,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
       </ul>
       <p class="note">Escala: 0.135 m por píxel del plano, ajustada al contorno del colegio en OpenStreetMap (±10%). La ruta y la línea de barra se redibujan con los botones del visor.</p>
     </details>
-  <footer class="ver">Versión 40 · 2026-10-17 08:23</footer>
+  <footer class="ver">Versión 41 · 2026-10-17 08:25</footer>
 </div>
 
 <aside id="att-panel" class="drawer" aria-label="Asistencia" hidden>
@@ -349,6 +349,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
   <label class="chk" for="att-pend" style="display:flex;gap:8px;align-items:center;font-size:.88rem"><input type="checkbox" id="att-pend" checked> Contar a los pendientes como que vienen</label>
   <p class="note" style="margin:0">Toca a cada persona para cambiar: <b>pendiente → viene → no viene</b>. Toca el código para marcar a toda la familia. El desfile y la barra se recalculan solos.</p>
   <div class="attf" role="group" aria-label="Mostrar"><button data-af="all" aria-pressed="true">Todos</button><button data-af="pend" aria-pressed="false">Solo pendientes</button><button data-af="vienen" aria-pressed="false">Ocultar los que no vienen</button></div>
+  <label class="chk" for="att-group" style="display:flex;gap:8px;align-items:center;font-size:.88rem"><input type="checkbox" id="att-group" checked> Separar por grado (K1, K2, K3)</label>
   <input id="att-q" type="search" placeholder="Buscar código…" aria-label="Buscar código" style="font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)">
   <div id="att-list" class="alist"></div>
   <div class="row"><button class="btn" id="att-copy">Copiar resumen</button><button class="btn" id="att-csv">Descargar CSV</button><button class="btn" id="att-reset">Reiniciar</button></div>
@@ -1522,11 +1523,12 @@ function renderAtt(){
   $('att-ro').textContent=ST.attLive===true?'Solo el administrador cambia la asistencia.':'La asistencia aún no se publica: el plan cuenta a todas las familias.';
   const groups={};
   const af=ST.attFilter||'all',kv=f=>AKEYS(f).map(k=>(ST.att[f.code]||{})[k]);
-  document.querySelectorAll('[data-af]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.af===af)));
+  document.querySelectorAll('[data-af]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.af===af)));$('att-group').checked=ST.attGroup!==false;
   FAMS.forEach(f=>{if(q&&!f.code.toUpperCase().includes(q))return;
     if(af==='pend'&&(f.absent||!kv(f).some(v=>!v)))return;
-    if(af==='vienen'&&(f.absent||kv(f).every(v=>v==='no')))return;(groups[f.grades[0]||'Sin grado']=groups[f.grades[0]||'Sin grado']||[]).push(f);});
-  $('att-list').innerHTML=Object.keys(groups).sort().map(g=>`<h4>${esc(g)}</h4>`+groups[g].map(f=>{
+    if(af==='vienen'&&(f.absent||kv(f).every(v=>v==='no')))return;const g=ST.attGroup===false?'':f.grades[0]||'Sin grado';(groups[g]=groups[g]||[]).push(f);});
+  if(groups[''])groups[''].sort((a,b)=>a.code.localeCompare(b.code));
+  $('att-list').innerHTML=Object.keys(groups).sort().map(g=>(g?`<h4>${esc(g)}</h4>`:'')+groups[g].map(f=>{
     if(f.absent)return `<div class="arow out"><span class="acode">${esc(f.code)}</span><span class="anote">No asiste (marcado en la lista)</span></div>`;
     const a=ST.att[f.code]||{};
     return `<div class="arow"><button class="acode" data-fam="${esc(f.code)}" title="Marcar a toda la familia">${esc(f.code)} <small>${esc(f.grades.join('/'))}</small>${famName(f.code)?`<span class="af">${esc(famName(f.code))}</span>`:''}</button>`+
@@ -1540,6 +1542,7 @@ $('att-list').addEventListener('click',e=>{const b=e.target.closest('button[data
   else{const all=AKEYS(f).every(k=>a[k]==='si');AKEYS(f).forEach(k=>{a[k]=all?'no':'si';});}
   attChanged();});
 $('att-q').addEventListener('input',renderAtt);
+$('att-group').addEventListener('change',e=>{ST.attGroup=e.target.checked;saveState();renderAtt();});
 document.querySelectorAll('[data-af]').forEach(b=>b.addEventListener('click',()=>{ST.attFilter=b.dataset.af;saveState();renderAtt();}));
 $('att-pend').addEventListener('change',e=>{ST.attPending=e.target.checked;attChanged();});
 $('att-live').addEventListener('change',e=>{ST.attLive=e.target.checked;attChanged();});
