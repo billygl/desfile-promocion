@@ -1,7 +1,8 @@
 """Build index.html: embeds mapa.jpg, banner.jpg and escudo.png into src/desfile.html so the page works offline.
 
 python build.py                 -> only builds index.html
-python build.py --home          -> also copies it to the greens2037.website repo (default ../../lhs_directory/home-site)
+python build.py --home          -> also copies it to the greens2037.website repo, looked up in
+                                   ../../lhs_directory/home-site, ../greens2037-home or ../home-site
 python build.py --home <path>   -> same, with the home-site repo somewhere else
 """
 import base64
@@ -19,7 +20,13 @@ print("index.html built")
 
 if "--home" in sys.argv:
     i = sys.argv.index("--home")
-    site = pathlib.Path(sys.argv[i + 1]) if len(sys.argv) > i + 1 else root.parent.parent / "lhs_directory" / "home-site"
+    # either the path given, or the usual places: this computer's layout, or both repos side by side (e.g. _wks/)
+    candidates = [pathlib.Path(sys.argv[i + 1])] if len(sys.argv) > i + 1 else [
+        root.parent.parent / "lhs_directory" / "home-site",
+        root.parent / "greens2037-home",
+        root.parent / "home-site",
+    ]
+    site = next((c for c in candidates if (c / ".git").exists()), candidates[0])
     if not (site / ".git").exists():
         sys.exit(f"No encuentro el repo del sitio en {site.resolve()}.\n"
                  f"Clónalo ahí:  git clone https://github.com/billygl/greens2037-home.git \"{site.resolve()}\"\n"

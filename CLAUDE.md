@@ -22,15 +22,22 @@ Publicada en https://greens2037.website/desfile/
 
 Necesita esta estructura de carpetas:
 
+`build.py --home` encuentra el repo del sitio en cualquiera de estas dos estructuras:
+
 ```
+# computadora principal
 <raíz>/olimpiadas/parade           ← billygl/desfile-promocion (este repo)
 <raíz>/lhs_directory/home-site     ← billygl/greens2037-home (sitio greens2037.website)
+
+# repos sueltos uno al lado del otro (p. ej. _wks/)
+_wks/desfile-promocion             ← este repo
+_wks/greens2037-home               ← sitio
 ```
 
 Si en esta computadora solo está clonado este repo, falta el del sitio (es privado; necesita `gh auth login` con la cuenta billygl):
 
 ```
-git clone https://github.com/billygl/greens2037-home.git ../../lhs_directory/home-site
+git clone https://github.com/billygl/greens2037-home.git ../greens2037-home
 ```
 
 (o clónalo donde quieras y usa `python build.py --home <ruta-a-home-site>`).
