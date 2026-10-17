@@ -337,7 +337,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
       </ul>
       <p class="note">Escala: 0.135 m por píxel del plano, ajustada al contorno del colegio en OpenStreetMap (±10%). La ruta y la línea de barra se redibujan con los botones del visor.</p>
     </details>
-  <footer class="ver">Versión 41 · 2026-10-17 08:25</footer>
+  <footer class="ver">Versión 42 · 2026-10-17 08:29</footer>
 </div>
 
 <aside id="att-panel" class="drawer" aria-label="Asistencia" hidden>
@@ -1525,7 +1525,7 @@ function renderAtt(){
   const af=ST.attFilter||'all',kv=f=>AKEYS(f).map(k=>(ST.att[f.code]||{})[k]);
   document.querySelectorAll('[data-af]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.af===af)));$('att-group').checked=ST.attGroup!==false;
   FAMS.forEach(f=>{if(q&&!f.code.toUpperCase().includes(q))return;
-    if(af==='pend'&&(f.absent||!kv(f).some(v=>!v)))return;
+    if(af==='pend'&&(f.absent||kv(f).some(v=>v)))return; // nobody in the family marked yet
     if(af==='vienen'&&(f.absent||kv(f).every(v=>v==='no')))return;const g=ST.attGroup===false?'':f.grades[0]||'Sin grado';(groups[g]=groups[g]||[]).push(f);});
   if(groups[''])groups[''].sort((a,b)=>a.code.localeCompare(b.code));
   $('att-list').innerHTML=Object.keys(groups).sort().map(g=>(g?`<h4>${esc(g)}</h4>`:'')+groups[g].map(f=>{

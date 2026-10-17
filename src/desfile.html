@@ -1525,7 +1525,7 @@ function renderAtt(){
   const af=ST.attFilter||'all',kv=f=>AKEYS(f).map(k=>(ST.att[f.code]||{})[k]);
   document.querySelectorAll('[data-af]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.af===af)));$('att-group').checked=ST.attGroup!==false;
   FAMS.forEach(f=>{if(q&&!f.code.toUpperCase().includes(q))return;
-    if(af==='pend'&&(f.absent||!kv(f).some(v=>!v)))return;
+    if(af==='pend'&&(f.absent||kv(f).some(v=>v)))return; // nobody in the family marked yet
     if(af==='vienen'&&(f.absent||kv(f).every(v=>v==='no')))return;const g=ST.attGroup===false?'':f.grades[0]||'Sin grado';(groups[g]=groups[g]||[]).push(f);});
   if(groups[''])groups[''].sort((a,b)=>a.code.localeCompare(b.code));
   $('att-list').innerHTML=Object.keys(groups).sort().map(g=>(g?`<h4>${esc(g)}</h4>`:'')+groups[g].map(f=>{
