@@ -206,9 +206,9 @@ tr.fam-start td{border-top:2px solid var(--line)}
           <button id="v-jurado" aria-pressed="false">Vista del jurado</button>
         </div>
         <div class="seg" role="group" aria-label="Capas">
-          <button id="ly-codes" aria-pressed="true" title="Códigos y nombres sobre las personas">Nombres</button>
+          <button id="ly-codes" aria-pressed="false" title="Códigos y nombres sobre las personas">Nombres</button>
           <button id="ly-props" aria-pressed="true" title="Globos, letras, pancarta, dragón">Materiales</button>
-          <button id="ly-roofs" aria-pressed="true" title="Techos del escenario, graderías y corredor">Techos</button>
+          <button id="ly-roofs" aria-pressed="false" title="Techos del escenario, graderías y corredor">Techos</button>
         </div>
         <div class="seg tools" id="drawbar" role="group" aria-label="Dibujo" hidden>
           <button id="d-undo" hidden>Deshacer punto</button>
@@ -1310,7 +1310,7 @@ $('time').addEventListener('input',e=>{T=parseFloat(e.target.value);setPlaying(f
 ['i-bat','i-len','i-face','i-mode','i-slot','i-bloques'].forEach(id=>$(id).addEventListener('change',rebuild));
 $('i-emoji').addEventListener('change',()=>{if(PL)renderInfo(PL);});
 // layers: names, carried items and roofs can be hidden to see the formation clearly
-const LAYERS=Object.assign({codes:true,props:true,roofs:true},ST.layers||{});
+const LAYERS=Object.assign({codes:false,props:true,roofs:false},ST.layers||{});
 function applyLayers(){
   scene.traverse(o=>{if(o.isSprite)o.visible=LAYERS.codes;if(o.userData.prop)o.visible=LAYERS.props;if(o.userData.roof)o.visible=LAYERS.roofs;});
   [['codes','ly-codes'],['props','ly-props'],['roofs','ly-roofs']].forEach(([k,id])=>$(id).setAttribute('aria-pressed',String(LAYERS[k])));
