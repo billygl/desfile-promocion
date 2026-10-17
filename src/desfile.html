@@ -27,6 +27,8 @@ body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15
 h1,h2{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.01em}
 h1{font-size:clamp(1.6rem,3.6vw,2.4rem);font-weight:800;line-height:1.1}
 h2{font-size:1.25rem;font-weight:600}
+.encuesta{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;border-radius:12px;background:#1b5e34;color:#fff;text-decoration:none;font-weight:600;line-height:1.3}
+.encuesta span{font-size:1.4rem}.encuesta b{margin-left:auto;white-space:nowrap}
 .eyebrow{font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700}
 .lede{color:var(--muted);max-width:70ch;margin:6px 0 0}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
@@ -239,6 +241,8 @@ tr.fam-start td{border-top:2px solid var(--line)}
     <h1>Desfile y barra de la promoción</h1>
     <p class="lede">Simulación 3D sobre el plano del colegio: la columna recorre la ruta roja, pasa frente al escenario y forma la barra mirando al jurado. Cada familia aparece solo con su código de iniciales.</p>
     <p class="sync wait" data-sync>Cargando asignaciones de la hoja…</p>
+    <a class="encuesta" id="encuesta" href="/encuesta/"><span>⭐</span>¿Qué tal la confraternidad? Encuesta anónima de 1 minuto<b>Responder →</b></a>
+    <script>if(Date.now()>Date.parse('2026-11-01T00:00:00-05:00'))document.getElementById('encuesta').remove();</script>
   </header>
 
   <details class="card" id="s-resumen" open>
