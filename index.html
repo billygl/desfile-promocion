@@ -286,6 +286,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
     <label for="i-bat">Batucada (personas)<input id="i-bat" type="number" min="0" max="12" value="6"></label>
     <label for="i-len">Largo línea de barra (m)<input id="i-len" type="number" min="8" max="40" step="0.5" value="24"></label>
     <label for="i-mode">Barra<select id="i-mode"><option value="columna">Columna junto a Prekinder y Nursery</option><option value="filas">Filas horizontales (toda la línea)</option></select></label>
+    <label class="chk" for="i-bloques" style="flex-direction:row;align-items:center;gap:8px;color:var(--fg);font-size:.85rem"><input id="i-bloques" type="checkbox" checked> Formación por bloques en la barra (niños adelante, padres atrás, letras y muñecos al fondo)</label>
     <label for="i-slot">Nuestra columna<select id="i-slot"><option value="centro">Al centro</option><option value="izq">Izquierda (vista del jurado)</option><option value="der">Derecha (vista del jurado)</option></select></label>
     <label for="i-face">Frente de la barra<select id="i-face"><option value="jurado">Hacia el jurado (escenario)</option><option value="sur">De espaldas al escenario</option></select></label>
   </section>
@@ -457,7 +458,7 @@ const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},se
 
 function cfg(){
   const n=(id,d)=>{const v=parseFloat($(id).value);return isFinite(v)?v:d};
-  return {bat:Math.max(0,Math.round(n('i-bat',6))),mode:$('i-mode').value,slot:$('i-slot').value,len:n('i-len',14),face:$('i-face').value};
+  return {bat:Math.max(0,Math.round(n('i-bat',6))),mode:$('i-mode').value,bloques:$('i-bloques').checked,slot:$('i-slot').value,len:n('i-len',14),face:$('i-face').value};
 }
 
 /* ---------- path ---------- */
@@ -632,6 +633,45 @@ function plan(c,fams){
     const cAl=alOf(order[0]);
     const put2=(p,lat,dd,row,extra)=>{p.b=at(cAl-lat,dd,row);Object.assign(p.b,extra||{});};
     const hw=bs/2-0.4;
+    if(c.bloques){
+      // block layout: pancarta and eagle in front, kids block, parents block, words and dolls at the back,
+      // pompones along both sides, the dragon along the jury's left and the misses on the right edge
+      const edge=bs/2-0.15,side=bs/2-0.8,inner=side-0.45;
+      by('pancarta').forEach((p,i,a)=>put2(p,(i-(a.length-1)/2)*1.4,-1.5,'D'));
+      by('aguila').forEach(p=>put2(p,Math.min(edge,2.9),-1.6,'D'));
+      by('escudo').forEach(p=>put2(p,-Math.min(edge,2.4),-1.2,'D'));
+      by('antorcha').forEach(p=>put2(p,-Math.min(edge,3.2),-1.7,'D'));
+      by('direccion').forEach((p,i)=>{put2(p,(i%2?1:-1)*edge,-0.5,'D');p.faceGroup=true;});
+      const slotsIn=(n,gap,d0,rowGap)=>{const per=Math.max(3,Math.floor(2*inner/gap)+1),out=[];let d=d0;
+        for(let r=0;r*per<n;r++){const k=Math.min(per,n-r*per);for(let j=0;j<k;j++)out.push({lat:(j-(k-1)/2)*gap+(r%2?gap/2:0),d,r:r+1});d+=rowGap;}
+        return {out,end:d,rows:Math.ceil(n/per)};};
+      // kids in family order so each parent can stand right behind their own child
+      const kidsK=P.filter(p=>p.kid).sort((a,b)=>GRADES.indexOf(a.grade)-GRADES.indexOf(b.grade)||a.fam.localeCompare(b.fam));
+      const ks=slotsIn(kidsK.length,0.55,0.4,0.65);
+      kidsK.forEach((k,i)=>{const s=ks.out[i];put2(k,s.lat,s.d,'K'+s.r,{blk:'kids',r:s.r});});
+      const famLat={};kidsK.forEach(k=>{famLat[k.fam]=cAl-k.b.al;});
+      const parK=P.filter(p=>!p.b&&!p.kid&&['padre','baston'].includes(p.role)).sort((a,b)=>(famLat[a.fam]??0)-(famLat[b.fam]??0));
+      const ps=slotsIn(parK.length,0.6,ks.end+0.2,0.7),freeK=[...ps.out];
+      parK.forEach(p=>{const fl=famLat[p.fam]??0;let bi=0,bc=1e9;freeK.forEach((s,i)=>{const cst=Math.abs(s.lat-fl)+0.4*(s.r-1);if(cst<bc){bc=cst;bi=i;}});
+        const s=freeK.splice(bi,1)[0];if(s)put2(p,s.lat,s.d,'P'+s.r,{blk:'parents',r:s.r});});
+      let d=ps.end+0.3;
+      // LOVE · HONOR · SERVICE in one row, read left to right by the jury
+      const seq=[];WORDS.forEach((w,wi)=>{if(wi)seq.push(null);for(const ch of w)seq.push(ch);});
+      const lg=Math.min(0.42,(2*inner)/(seq.length-1));let lq3=[...letters];
+      seq.forEach((ch,j)=>{if(!ch)return;const p=lq3.shift();if(p)put2(p,(j-(seq.length-1)/2)*lg,d,'L1',{blk:'L',r:1});});
+      d+=0.8;
+      const mus=by('muneco');mus.forEach((p,i)=>put2(p,(i-(mus.length-1)/2)*Math.min(1.1,(2*inner)/Math.max(1,mus.length-1)),d,'MU'));
+      d+=0.9;
+      const bpr=Math.max(3,Math.min(6,Math.floor(2*inner/1.1)+1));
+      by('bat').forEach((p,i,a)=>{const n=Math.min(bpr,a.length-Math.floor(i/bpr)*bpr);put2(p,((i%bpr)-(n-1)/2)*1.1,d+Math.floor(i/bpr)*0.9,'B');});
+      d+=Math.ceil(by('bat').length/bpr)*0.9;
+      const pomp=by('pompon'),np=Math.ceil(pomp.length/2);
+      pomp.forEach((p,i)=>put2(p,(i%2?1:-1)*side,0.6+(Math.floor(i/2)+0.5)*(d-1.2)/np,'S'));
+      drs.forEach((p,j)=>put2(p,-edge,0.8+j*Math.min(2.4,(d-1.6)/Math.max(1,drs.length-1)),'F'));
+      const ms=by('miss');ms.forEach((m,i)=>put2(m,edge,0.6+(i+0.5)*(ps.end-0.6)/ms.length,'M'));
+      P.filter(p=>!p.b).forEach((p,i)=>put2(p,(i-0.5)*0.7,d+0.6,'F'));
+      PROMOS.forEach((pr,i)=>blocks.push({...pr,al:alOf(order[i]),rows:ks.rows+ps.rows,kr:ks.rows,pr:ps.rows,per:0,ours:i===0,width:bs,depth:d+0.8}));
+    }else{
     by('escudo').forEach(p=>put2(p,0,-2.2,'D'));
     by('pancarta').forEach((p,i,a)=>put2(p,(i-(a.length-1)/2)*1.4,-1.4,'D'));
     by('aguila').forEach(p=>put2(p,Math.min(hw,2.6),-1.5,'D'));
@@ -660,6 +700,7 @@ function plan(c,fams){
     drs.forEach((p,j)=>put2(p,(j-(drs.length-1)/2)*2.2,back,'F'));
     P.filter(p=>!p.b).forEach((p,i)=>put2(p,(i-0.5)*0.7,back+0.8,'F'));
     PROMOS.forEach((pr,i)=>blocks.push({...pr,al:alOf(order[i]),rows:nRows,per,ours:i===0,width:bs,depth:back+0.6}));
+    }
   }else{
   const kidList=P.filter(p=>p.kid&&!p.b).sort((a,b)=>a.lon-b.lon||a.lat-b.lat);
   const kGap=0.55;kRowsB=rowsOf(kidList.length,kGap,Math.max(4,Math.floor(Lb/kGap)+1));
@@ -688,7 +729,7 @@ function plan(c,fams){
 
   P.forEach(p=>{const e=pathAt(PATH.L),d=pathDir(PATH.L);p.e={x:e.x-d.z*p.lat,z:e.z+d.x*p.lat};p.D=Math.hypot(p.b.x-p.e.x,p.b.z-p.e.z);});
   const tEnd=Math.max(...P.map(p=>(p.lon+PATH.L+p.D)/V))+2;
-  return {P,att,fams,kids:P.filter(p=>p.kid).length,parents:P.filter(p=>!p.kid).length,rows:rows.length,maxLon,sections,Lb,nb,mid,kRowsB,pRowsB,blocks,GRADES,mode:c.mode,letterRow:letters.length>0,tEnd,tStage2:PATH.L/V,tInit:Math.min(maxLon,PATH.L)/V,A,B,ctr,at,u};
+  return {P,att,fams,kids:P.filter(p=>p.kid).length,parents:P.filter(p=>!p.kid).length,rows:rows.length,maxLon,sections,Lb,nb,mid,kRowsB,pRowsB,blocks,GRADES,mode:c.mode,bloques:c.mode==='columna'&&c.bloques,letterRow:letters.length>0,tEnd,tStage2:PATH.L/V,tInit:Math.min(maxLon,PATH.L)/V,A,B,ctr,at,u};
 }
 
 /* ---------- stats, diagrams, table ---------- */
@@ -726,7 +767,8 @@ function renderInfo(pl){
     it(swatch('#4aa59a'),'Cancha')+it(swatch('#c98b7a'),'Techo de graderías')+`</div>`;
   $('parade-sum').innerHTML=`Columna de <b>${pl.maxLon.toFixed(1)} m</b> por <b>≈5.4 m</b> de ancho. Cabeza: Águila, antorcha, pancarta, escudo, LOVE / HONOR / SERVICE y batucada. Luego <b>${pl.rows} filas de familias</b> agrupadas por grado (${pl.GRADES.join(', ')}), con el dragón al medio. ${ROUTE?`El recorrido dibujado mide ≈${PATH.L.toFixed(0)} m.`:'Falta dibujar el recorrido en el visor 3D.'}`;
   const kr=pl.kRowsB.map(r=>r.length),pr=pl.pRowsB.map(r=>r.length);
-  if(pl.mode==='columna')$('barra-sum').innerHTML=`La línea de <b>${pl.Lb.toFixed(1)} m</b> la comparten las 3 promociones: <b>Kinder (nosotros, verde)</b>, Prekinder (rosado) y Nursery (azul), cada una en una columna de ${(pl.Lb/3).toFixed(1)} m mirando al jurado. Nuestra columna: escudo, pancarta, Águila y antorcha delante; los 2 que dirigen en las esquinas; LOVE HONOR SERVICE al frente; luego <b>${pl.blocks[0].rows} filas de ${pl.blocks[0].per} familias</b> (${pl.GRADES.join(', ')}), cada hijo entre su papá y su mamá; atrás la batucada y el dragón alzado. Prekinder y Nursery (con sus 4 misses cada una) se dibujan solo como referencia: desfilan después de nosotros, así que en el 3D aparecen recién cuando nuestra barra está formada. Nuestras 6 misses, 2 por sección, van en los bordes de las filas de su sección.`;
+  if(pl.bloques)$('barra-sum').innerHTML=`<b>Formación por bloques.</b> La línea de <b>${pl.Lb.toFixed(1)} m</b> la comparten Prekinder, Kinder (nosotros) y Nursery, cada una en una columna de ${(pl.Lb/3).toFixed(1)} m mirando al jurado. En nuestra columna, de adelante hacia atrás: pancarta con el Águila a la derecha (y escudo, antorcha y los 2 que dirigen); <b>niños</b> (${pl.blocks[0].kr} filas); <b>padres</b> (${pl.blocks[0].pr} filas), cada uno lo más cerca posible detrás de su hijo; LOVE · HONOR · SERVICE; los 6 muñecos y la batucada al fondo. Pompones a ambos lados, el dragón por la izquierda y las misses por la derecha. Se puede volver a la formación por familias en Configuración.`;
+  else if(pl.mode==='columna')$('barra-sum').innerHTML=`La línea de <b>${pl.Lb.toFixed(1)} m</b> la comparten las 3 promociones: <b>Kinder (nosotros, verde)</b>, Prekinder (rosado) y Nursery (azul), cada una en una columna de ${(pl.Lb/3).toFixed(1)} m mirando al jurado. Nuestra columna: escudo, pancarta, Águila y antorcha delante; los 2 que dirigen en las esquinas; LOVE HONOR SERVICE al frente; luego <b>${pl.blocks[0].rows} filas de ${pl.blocks[0].per} familias</b> (${pl.GRADES.join(', ')}), cada hijo entre su papá y su mamá; atrás la batucada y el dragón alzado. Prekinder y Nursery (con sus 4 misses cada una) se dibujan solo como referencia: desfilan después de nosotros, así que en el 3D aparecen recién cuando nuestra barra está formada. Nuestras 6 misses, 2 por sección, van en los bordes de las filas de su sección.`;
   else if(pl.mode==='grados')$('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela al escenario (Jr. Gregorio Paredes) y mirando al jurado. Delante: escudo, pancarta, Águila, antorcha y los 2 que dirigen. Fila 1: <b>LOVE HONOR SERVICE</b>. Detrás, <b>una columna por grado</b> (${pl.blocks.map(b=>b.g+': '+b.rows+' filas').join(', ')}), lado a lado, de ${(pl.Lb/pl.blocks.length).toFixed(1)} m de ancho cada una: el hijo al centro y sus padres a los costados, como en el desfile. El dragón se alza detrás de todos y la batucada va al costado.`;
   else $('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela al escenario (Jr. Gregorio Paredes) y mirando al jurado. Delante: escudo, pancarta, Águila y antorcha. Fila 1: <b>LOVE HONOR SERVICE</b>. Luego ${kr.length} filas de niños (${kr.join(' + ')}) y ${pr.length} de padres (${pr.join(' + ')}), en tresbolillo para que todos vean. Batucada al costado este.`;
   drawParade(pl);drawBarra(pl);renderTable(pl);renderTasks(pl);
@@ -809,7 +851,7 @@ function renderTable(pl){
   const SHORT={aguila:'Águila',antorcha:'Antorcha',pancarta:'Pancarta',escudo:'Escudo',letra:'Letra',bat:'Batucada',dragon:'Dragón',muneco:'Muñeco',pompon:'Pompón',baston:'Bastón',direccion:'Dirige'};
   const rol=p=>p.role==='padre'||p.role==='nino'?'sin rol':p.role==='letra'?`Letra ${p.letter||''}`:SHORT[p.role];
   const ourAl=(pl.blocks[0]||{al:pl.mid}).al;
-  const bar=p=>p.b.row==='M'?`F${p.b.r} ${bs(p.b.al,ourAl)} borde`:p.b.blk==='col'?`F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.blk==='L'?`L${p.b.r}`:p.b.row==='B'||p.b.row==='C'?'Bat':p.b.row==='F'?'Atr':p.b.row==='D'?'Del':p.b.blk?`${p.b.blk} F${p.b.r}`:`F${p.b.row} P${p.bpos}`;
+  const bar=p=>p.b.blk==='kids'?`Niños F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.blk==='parents'?`Padres F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.row==='MU'?'Muñecos (fondo)':p.b.row==='S'?`Costado ${bs(p.b.al,ourAl)}`:p.b.row==='M'&&!p.b.r?'Borde der.':p.b.row==='M'?`F${p.b.r} ${bs(p.b.al,ourAl)} borde`:p.b.blk==='col'?`F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.blk==='L'?`L${p.b.r}`:p.b.row==='B'||p.b.row==='C'?'Bat':p.b.row==='F'?'Atr':p.b.row==='D'?'Del':p.b.blk?`${p.b.blk} F${p.b.r}`:`F${p.b.row} P${p.bpos}`;
   const list=pl.P.filter(p=>!q||p.fam.toUpperCase().includes(q)).sort((a,b)=>a.fam.localeCompare(b.fam)||a.kid-b.kid||a.idx-b.idx);
   let last='';
   $('tbody').innerHTML=list.map(p=>{const st=p.fam!==last?' class="fam-start"':'';const code=p.role==='miss'?'Miss <span style="color:var(--muted);font-weight:400">'+esc(p.grade)+'</span>':p.fam!==last?esc(p.fam)+' <span style="color:var(--muted);font-weight:400">'+[...new Set(p.f.kid.map(k=>k.grade))].join('/')+'</span>':'';last=p.fam;
@@ -1222,7 +1264,7 @@ $('st-2').addEventListener('click',()=>playStage(2));
 function setPlaying(v){playing=v;$('play').setAttribute('aria-pressed',String(v));$('play').textContent=v?'❚❚ Pausa':'▶ Transición';}
 $('play').addEventListener('click',()=>{if(!playing&&(T>=PL.tEnd-0.05||T<PL.tInit))T=PL.tInit;stageEnd=PL.tEnd;if(view==='follow')setView('3d');setPlaying(!playing);});
 $('time').addEventListener('input',e=>{T=parseFloat(e.target.value);setPlaying(false);update(T);});
-['i-bat','i-len','i-face','i-mode','i-slot'].forEach(id=>$(id).addEventListener('change',rebuild));
+['i-bat','i-len','i-face','i-mode','i-slot','i-bloques'].forEach(id=>$(id).addEventListener('change',rebuild));
 // layers: names, carried items and roofs can be hidden to see the formation clearly
 const LAYERS=Object.assign({codes:true,props:true,roofs:true},ST.layers||{});
 function applyLayers(){
@@ -1236,7 +1278,7 @@ $('tbody').addEventListener('change',e=>{const s=e.target.closest('select[data-k
   if(s.value)ST.over[s.dataset.k]=s.value;else delete ST.over[s.dataset.k];saveState();overMsg();rebuild();});
 $('over-clear').addEventListener('click',()=>{ST.over={};saveState();overMsg();rebuild();});
 // remember every control
-const INPUTS=['i-bat','i-len','i-face','i-mode','i-slot','speed'];
+const INPUTS=['i-bat','i-len','i-face','i-mode','i-slot','i-bloques','speed'];
 INPUTS.forEach(id=>{const el=$(id),v=ST.inputs[id];if(v!==undefined){if(el.type==='checkbox')el.checked=v;else el.value=v;}
   el.addEventListener('change',()=>{ST.inputs[id]=el.type==='checkbox'?el.checked:el.value;saveState();});});
 
