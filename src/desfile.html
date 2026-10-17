@@ -262,7 +262,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
         <li>Filas a <span class="mono">1.2 m</span>, columnas a <span class="mono">0.9 m</span>. Muñecos y pompones los lleva el padre de afuera, alternados a lo largo del bloque.</li>
         <li><b>LOVE · HONOR · SERVICE</b> va detrás de la pancarta, precedido por el escudo, para que se lea de frente.</li>
         <li>El dragón va entre grados con sus 3 cargadores en fila, cada 2.4 m.</li>
-        <li>Fijos: Águila = papá de AnB; dirigen coreografía y canto = papás de CV y MG. Los demás roles se reparten solos o se fijan desde la tabla.</li>
+        <li>Fijos: Águila = papá de AnB; coreografía = papá de CV; canto = papá de MG. Los demás roles se reparten solos o se fijan desde la tabla.</li>
         <li>La línea de barra la comparten Prekinder, Kinder (nosotros) y Nursery, cada una en su columna mirando al escenario, paralela a Jr. Gregorio Paredes.</li>
         <li>En nuestra columna: escudo, pancarta, Águila y antorcha delante; luego las letras y las familias, cada hijo entre su papá y su mamá; atrás la batucada y el dragón.</li>
       </ul>
@@ -291,7 +291,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
     <label for="i-face">Frente de la barra<select id="i-face"><option value="jurado">Hacia el jurado (escenario)</option><option value="sur">De espaldas al escenario</option></select></label>
   </section>
   <div class="lg"><h3>Familias</h3>
-    <p class="note" style="margin:0">Una familia por línea: código de 2 o 3 letras, cantidad de hijos (si no es 1), grado de cada hijo (K1, K2, K3) y roles opcionales. <span class="mono">-</span> al inicio = no asiste; quién viene se marca en el panel Asistencia. Roles (los llevan papás y mamás): <span class="mono">aguila direccion pancarta escudo antorcha letra bat dragon muneco pompon baston</span>; con <span class="mono">papa:</span> o <span class="mono">mama:</span> delante se elige quién. <span class="mono">sin-papa</span> / <span class="mono">sin-mama</span> = asiste uno solo.</p>
+    <p class="note" style="margin:0">Una familia por línea: código de 2 o 3 letras, cantidad de hijos (si no es 1), grado de cada hijo (K1, K2, K3) y roles opcionales. <span class="mono">-</span> al inicio = no asiste; quién viene se marca en el panel Asistencia. Roles (los llevan papás y mamás): <span class="mono">aguila coreo canto pancarta escudo antorcha letra bat dragon muneco pompon baston</span>; con <span class="mono">papa:</span> o <span class="mono">mama:</span> delante se elige quién. <span class="mono">sin-papa</span> / <span class="mono">sin-mama</span> = asiste uno solo.</p>
     <textarea id="fam-list" spellcheck="false" aria-label="Lista de familias" style="min-height:260px"></textarea>
     <div class="row"><button class="btn" id="fam-apply">Aplicar lista</button><button class="btn" id="fam-reset">Volver a la lista del directorio</button></div>
     <span class="note" id="fam-msg"></span>
@@ -335,7 +335,8 @@ const ROLE={
   padre:{c:'#1b5e34',n:'Papá / mamá'},
   nino:{c:'#7cc88a',n:'Niño / niña'},
   aguila:{c:'#8a5a2b',n:'Águila'},
-  direccion:{c:'#0f766e',n:'Dirige coreografía y canto'},
+  coreo:{c:'#0f766e',n:'Dirige la coreografía'},
+  canto:{c:'#0e7490',n:'Dirige el canto'},
   antorcha:{c:'#e5532d',n:'Antorcha'},
   pancarta:{c:'#7a4fa0',n:'Pancarta'},
   escudo:{c:'#1f3f8f',n:'Escudo'},
@@ -379,7 +380,7 @@ CN K1
 CasM K3
 ChA K1
 CL K3
-CV K2 papa:direccion
+CV K2 papa:coreo
 CE K1
 DG K1
 DVG K2
@@ -402,7 +403,7 @@ MF K2
 MV K2
 MS K3
 MQ K3
-MG K2 papa:direccion
+MG K2 papa:canto
 NC K2
 OV K3
 OS K2
@@ -503,7 +504,7 @@ function plan(c,fams){
   // manual assignments from the table win over everything else
   P.forEach(p=>{const o=ST.over[pkey(p)];if(!o||p.kid)return;p.lock=true;if(o!=='libre'&&ROLE[o])p.role=o;});
   const count=r=>P.filter(p=>p.role===r).length;
-  const need={direccion:2,aguila:1,pancarta:3,bat:c.bat,dragon:3,muneco:6,pompon:6,antorcha:1,baston:8,escudo:1,letra:WORDS.join('').length};
+  const need={coreo:1,canto:1,aguila:1,pancarta:3,bat:c.bat,dragon:3,muneco:6,pompon:6,antorcha:1,baston:8,escudo:1,letra:WORDS.join('').length};
   const freePar=(f,g)=>f.par.find(p=>p.role==='padre'&&!p.lock&&(!g||p.g===g));
   const freeKid=f=>f.kid.find(p=>p.role==='nino'&&!p.lock);
   // explicit roles from the list
@@ -523,6 +524,7 @@ function plan(c,fams){
   const put=(p,lat,lon)=>{p.lat=lat;p.lon=lon;};
   let lon=0;
   const by=r=>P.filter(p=>p.role===r);
+  const byDir=()=>[...by('coreo'),...by('canto')]; // the two leaders walk and stand together
   sections.push({name:'Águila',lon});by('aguila').forEach(p=>put(p,0,lon));lon+=2.4;
   sections.push({name:'Antorcha',lon});by('antorcha').forEach(p=>put(p,0,lon));lon+=2.0;
   sections.push({name:'Pancarta',lon});by('pancarta').forEach((p,i,a)=>put(p,(i-(a.length-1)/2)*1.6,lon));lon+=2.0;
@@ -570,7 +572,7 @@ function plan(c,fams){
   const bOrder=[...pickEven(pairRows,Math.ceil(needB/2)),...pairRows];
   for(const row of bOrder){if(needB<=0)break;[row.l,row.r].forEach(u=>{if(!u||needB<=0)return;const k=u.par.find(x=>x.role==='padre'&&!x.lock);if(k){k.role='baston';needB--;}});}
 
-  by('direccion').forEach((p,i)=>put(p,i%2?3.4:-3.4,lon+Math.floor(i/2)*1.2));
+  byDir().forEach((p,i)=>put(p,i%2?3.4:-3.4,lon+Math.floor(i/2)*1.2));
   const drs=by('dragon');
   const placeRow=(row,lon,o)=>{ // o: lateral offsets {outer,inner,kid}
     if(row.type==='full'){const u=row.u;
@@ -611,7 +613,7 @@ function plan(c,fams){
   by('aguila').forEach(p=>p.b=at(mid-3.6,-1.6,'D'));
   by('antorcha').forEach(p=>p.b=at(mid+3.4,-1.6,'D'));
   by('bat').forEach((p,i)=>p.b=at(Lb+1.0+(i%2)*0.9,0.4+Math.floor(i/2)*0.9,'C'));
-  by('direccion').forEach((p,i)=>{p.b=at(i%2?Lb-0.6:0.6,-1.0,'D');p.faceGroup=true;});
+  byDir().forEach((p,i)=>{p.b=at(i%2?Lb-0.6:0.6,-1.0,'D');p.faceGroup=true;});
   let dp=0.4,rowNo=1;
   // letters: one row, a gap between words
   const lseq=[];WORDS.forEach((w,wi)=>{if(wi)lseq.push(null);for(const ch of w)lseq.push(ch);});
@@ -642,7 +644,7 @@ function plan(c,fams){
       by('aguila').forEach(p=>put2(p,Math.min(edge,2.9),-1.6,'D'));
       by('escudo').forEach(p=>put2(p,-Math.min(edge,2.4),-1.2,'D'));
       by('antorcha').forEach(p=>put2(p,-Math.min(edge,3.2),-1.7,'D'));
-      by('direccion').forEach((p,i)=>{put2(p,(i%2?1:-1)*edge,-0.5,'D');p.faceGroup=true;});
+      byDir().forEach((p,i)=>{put2(p,(i%2?1:-1)*edge,-0.5,'D');p.faceGroup=true;});
       const slotsIn=(n,gap,d0,rowGap)=>{const per=Math.max(3,Math.floor(2*inner/gap)+1),out=[];let d=d0;
         for(let r=0;r*per<n;r++){const k=Math.min(per,n-r*per);for(let j=0;j<k;j++)out.push({lat:(j-(k-1)/2)*gap+(r%2?gap/2:0),d,r:r+1});d+=rowGap;}
         return {out,end:d,rows:Math.ceil(n/per)};};
@@ -677,7 +679,7 @@ function plan(c,fams){
     by('pancarta').forEach((p,i,a)=>put2(p,(i-(a.length-1)/2)*1.4,-1.4,'D'));
     by('aguila').forEach(p=>put2(p,Math.min(hw,2.6),-1.5,'D'));
     by('antorcha').forEach(p=>put2(p,-Math.min(hw,2.6),-1.5,'D'));
-    by('direccion').forEach((p,i)=>{put2(p,(i%2?1:-1)*Math.min(hw,3.4),-0.6,'D');p.faceGroup=true;});
+    byDir().forEach((p,i)=>{put2(p,(i%2?1:-1)*Math.min(hw,3.4),-0.6,'D');p.faceGroup=true;});
     // letters: one word per row, readable from the jury
     let lq2=[...letters],d=0.4;
     const lrows=bs>=7.2?[WORDS[0]+' '+WORDS[1],WORDS[2]]:WORDS; // LOVE HONOR / SERVICE when the column is wide enough
@@ -757,7 +759,7 @@ function renderInfo(pl){
     it(sh(`<rect x="2.5" y="2.5" width="7" height="7" transform="rotate(45 6 6)" fill="${ROLE.nino.c}"/>`),'Niño o niña')+
     it('<span class="mono" style="white-space:nowrap;min-width:46px">pa / ma</span>','junto al código: papá o mamá que tiene un rol')+`</div>`+
     `<div class="lg"><h3>Qué lleva</h3>`+
-    Object.entries(ABBR).map(([k,a])=>it(`<span class="chip" style="background:${ROLE[k].c}">${k==='letra'?'L·O':a}</span>`,ROLE[k].n)).join('')+`</div>`+
+    Object.entries(ABBR).map(([k,a])=>it(`<span class="chip" style="background:${ROLE[k].c};font-size:${k==='letra'?'.7rem':'.95rem'}">${k==='letra'?'L·O':a}</span>`,ROLE[k].n)).join('')+`</div>`+
     `<div class="lg"><h3>Cómo moverte en el 3D</h3>`+
     it('<span class="chip" style="background:var(--fg);color:var(--bg)">1 dedo</span>','arrastrar: girar la cámara')+
     it('<span class="chip" style="background:var(--fg);color:var(--bg)">2 dedos</span>','pellizcar: acercar o alejar · arrastrar: mover el plano')+
@@ -777,13 +779,13 @@ function renderInfo(pl){
   else $('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela al escenario (Jr. Gregorio Paredes) y mirando al jurado. Delante: escudo, pancarta, Águila y antorcha. Fila 1: <b>LOVE HONOR SERVICE</b>. Luego ${kr.length} filas de niños (${kr.join(' + ')}) y ${pr.length} de padres (${pr.join(' + ')}), en tresbolillo para que todos vean. Batucada al costado este.`;
   drawParade(pl);drawBarra(pl);renderTable(pl);renderTasks(pl);
 }
-const ABBR={miss:'MS',aguila:'ÁG',antorcha:'AN',pancarta:'PA',escudo:'ES',letra:'L',bat:'BT',dragon:'DR',muneco:'MU',pompon:'PO',baston:'BA',direccion:'DI'};
+const ABBR={miss:'👩‍🏫',aguila:'🦅',coreo:'💃',canto:'🎤',antorcha:'🔥',pancarta:'🪧',escudo:'🛡️',letra:'L',bat:'🥁',dragon:'🐉',muneco:'🪆',pompon:'🎊',baston:'🎈'};
 const gtxt=p=>p.kid?'':p.g==='papa'?' pa':' ma';
 const label=p=>p.role==='miss'?'Miss '+p.grade:p.fam+(ROLE[p.role]&&ABBR[p.role]?gtxt(p):'');
 const label3d=p=>p.role==='miss'?'Miss '+p.grade:p.letter?p.letter+' · '+p.fam:p.fam+gtxt(p);
 function shape(x,y,p,r){
   if(ABBR[p.role]){const w=r*3,h=r*2.1,txt=p.role==='letra'?(p.letter||'L'):ABBR[p.role];
-    return `<rect x="${(x-w/2).toFixed(1)}" y="${(y-h/2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="2.5" fill="${ROLE[p.role].c}"/><text x="${x.toFixed(1)}" y="${(y+r*0.5).toFixed(1)}" font-size="${(r*1.35).toFixed(1)}" font-weight="700" text-anchor="middle" style="fill:#fff">${esc(txt)}</text>`;}
+    return `<rect x="${(x-w/2).toFixed(1)}" y="${(y-h/2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="2.5" fill="${ROLE[p.role].c}"/><text x="${x.toFixed(1)}" y="${(y+r*0.5).toFixed(1)}" font-size="${(p.role==='letra'?r*1.35:r*1.75).toFixed(1)}" font-weight="700" text-anchor="middle" style="fill:#fff">${esc(txt)}</text>`;}
   const c=p.role==='padre'&&p.g==='mama'?'#3f9a58':ROLE[p.role].c,X=x.toFixed(1),Y=y.toFixed(1);
   if(p.kid){const d=r*1.15;return `<polygon points="${X},${(y-d).toFixed(1)} ${(x+d).toFixed(1)},${Y} ${X},${(y+d).toFixed(1)} ${(x-d).toFixed(1)},${Y}" fill="${c}"/>`;}
   if(p.g==='papa')return `<rect x="${(x-r*0.88).toFixed(1)}" y="${(y-r*0.88).toFixed(1)}" width="${r*1.76}" height="${r*1.76}" rx="1.5" fill="${c}"/>`;
@@ -852,7 +854,7 @@ function renderTable(pl){
   const who=p=>p.kid?(p.f.kids>1?'Hijo/a '+p.idx:'Hijo/a'):GENDER[p.g];
   const emo=p=>p.role==='miss'?'<span title="Miss">👩‍🏫</span>':`<span title="${who(p)}">${p.kid?'🧒':p.g==='papa'?'👨':'👩'}</span>${p.kid&&p.f.kids>1?`<small>${p.idx}</small>`:''}`;
   const bs=(al,c)=>al>c+0.1?'Iz':al<c-0.1?'De':'Ce';
-  const SHORT={aguila:'Águila',antorcha:'Antorcha',pancarta:'Pancarta',escudo:'Escudo',letra:'Letra',bat:'Batucada',dragon:'Dragón',muneco:'Muñeco',pompon:'Pompón',baston:'Bastón',direccion:'Dirige'};
+  const SHORT={aguila:'🦅 Águila',coreo:'💃 Coreografía',canto:'🎤 Canto',antorcha:'🔥 Antorcha',pancarta:'🪧 Pancarta',escudo:'🛡️ Escudo',letra:'Letra',bat:'🥁 Batucada',dragon:'🐉 Dragón',muneco:'🪆 Muñeco',pompon:'🎊 Pompón',baston:'🎈 Bastón'};
   const rol=p=>p.role==='padre'||p.role==='nino'?'sin rol':p.role==='letra'?`Letra ${p.letter||''}`:SHORT[p.role];
   const ourAl=(pl.blocks[0]||{al:pl.mid}).al;
   const bar=p=>p.b.blk==='kids'?`Niños F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.blk==='parents'?`Padres F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.row==='MU'?'Muñecos (fondo)':p.b.row==='S'?`Costado ${bs(p.b.al,ourAl)}`:p.b.row==='M'&&!p.b.r?'Borde der.':p.b.row==='M'?`F${p.b.r} ${bs(p.b.al,ourAl)} borde`:p.b.blk==='col'?`F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.blk==='L'?`L${p.b.r}`:p.b.row==='B'||p.b.row==='C'?'Bat':p.b.row==='F'?'Atr':p.b.row==='D'?'Del':p.b.blk?`${p.b.blk} F${p.b.r}`:`F${p.b.row} P${p.bpos}`;
@@ -860,7 +862,7 @@ function renderTable(pl){
   let last='';
   $('tbody').innerHTML=list.map(p=>{const st=p.fam!==last?' class="fam-start"':'';const code=p.role==='miss'?'Miss <span style="color:var(--muted);font-weight:400">'+esc(p.grade)+'</span>':p.fam!==last?esc(p.fam)+' <span style="color:var(--muted);font-weight:400">'+[...new Set(p.f.kid.map(k=>k.grade))].join('/')+'</span>':'';last=p.fam;
     if(p.role==='miss')return `<tr class="fam-start"><td class="code">${code}</td><td class="who">${emo(p)}</td><td>Miss</td><td class="pos">F${p.prow} ${side(p)}</td><td class="pos">${bar(p)}</td></tr>`;
-    const k=pkey(p),cur=ST.over[k]||'',opts=['aguila','direccion','pancarta','escudo','antorcha','letra','bat','dragon','muneco','pompon','baston'];
+    const k=pkey(p),cur=ST.over[k]||'',opts=['aguila','coreo','canto','pancarta','escudo','antorcha','letra','bat','dragon','muneco','pompon','baston'];
     const sel=p.kid?'<span style="color:var(--muted)">no lleva nada</span>':`<select class="${cur?'manual':''}" data-k="${esc(k)}" aria-label="Rol de ${esc(p.fam)} ${esc(who(p))}"><option value=""${cur?'':' selected'}>${cur?'Automático':esc(rol(p))+' · auto'}</option><option value="libre"${cur==='libre'?' selected':''}>Sin rol</option>${opts.map(o=>`<option value="${o}"${cur===o?' selected':''}>${SHORT[o]}</option>`).join('')}</select>`;
     return `<tr${st}><td class="code">${code}</td><td class="who">${emo(p)}</td><td>${sel}</td><td class="pos">F${p.prow} ${side(p)}</td><td class="pos">${bar(p)}</td></tr>`;}).join('')
     +pl.fams.filter(f=>!pl.att.includes(f)&&(!q||f.code.toUpperCase().includes(q))).map(f=>`<tr class="fam-start"><td class="code">${esc(f.code)}</td><td colspan="4">No viene</td></tr>`).join('');
@@ -873,20 +875,19 @@ function roleTasks(pl){
   const who=p=>p.role==='miss'?'Miss '+p.grade:p.kid?p.fam+' (hijo/a)':p.fam+(p.g==='papa'?' papá':' mamá');
   const of=r=>pl.P.filter(p=>p.role===r),out=[];
   const add=(id,title,ps)=>out.push({id,title,auto:ps.map(who).join(', ')||'sin asignar'});
-  const dir=of('direccion');
-  add('r-canto','Dirigir el canto',dir.slice(0,1));
-  add('r-coreo','Dirigir la coreografía',dir.slice(1,2));
-  add('r-aguila','Águila (botarga de globos)',of('aguila'));
-  add('r-antorcha','Antorcha',of('antorcha'));
-  add('r-escudo','Escudo',of('escudo'));
-  add('r-pancarta','Pancarta',of('pancarta'));
+  add('r-coreo','💃 Dirigir la coreografía',of('coreo'));
+  add('r-canto','🎤 Dirigir el canto',of('canto'));
+  add('r-aguila','🦅 Águila (botarga de globos)',of('aguila'));
+  add('r-antorcha','🔥 Antorcha',of('antorcha'));
+  add('r-escudo','🛡️ Escudo',of('escudo'));
+  add('r-pancarta','🪧 Pancarta',of('pancarta'));
   WORDS.forEach(w=>{const ps=of('letra').filter(p=>p.word===w);out.push({id:'r-letras-'+w,title:'Letras '+w,auto:ps.map(p=>p.letter+' '+p.fam+(p.g==='papa'?' pa':' ma')).join(' · ')||'sin asignar'});});
-  add('r-bat','Batucada',of('bat'));
-  add('r-dragon','Cargar el dragón',of('dragon'));
-  add('r-muneco','Muñecos',of('muneco'));
-  add('r-pompon','Pompones supremos',of('pompon'));
-  add('r-baston','Bastones',of('baston'));
-  add('r-miss','Misses (2 por sección)',of('miss'));
+  add('r-bat','🥁 Batucada',of('bat'));
+  add('r-dragon','🐉 Cargar el dragón',of('dragon'));
+  add('r-muneco','🪆 Muñecos',of('muneco'));
+  add('r-pompon','🎊 Pompones supremos',of('pompon'));
+  add('r-baston','🎈 Bastones',of('baston'));
+  add('r-miss','👩‍🏫 Misses (2 por sección)',of('miss'));
   return out;
 }
 function renderTasks(pl){
@@ -1045,7 +1046,7 @@ function makePerson(p){
     for(let i=0;i<12;i++){const a=i*2.4,y=Math.cos(i*0.9)*0.25;g.add(ball(['#2aa84a','#c9a227','#ffffff','#111111'][i%4],0.2,0.26+Math.cos(a)*0.3,2.75+y,0.1+Math.sin(a)*0.3));}
   }else if(R==='bat'){
     g.add(mesh(G.stick,'#c23b5a',0.24,0.3,0.24,0,0.95,0.3),mesh(G.stick,'#f4f4f4',0.245,0.02,0.245,0,1.11,0.3));
-  }else if(R==='direccion'){
+  }else if(R==='coreo'||R==='canto'){
     const mic=stick('#222',0.25,0.22,1.25,0.2,0.03);mic.rotation.x=-0.6;g.add(mic,ball('#333',0.06,0.22,1.45,0.3));
   }else if(R==='dragon'){
     g.add(stick('#8b5a2b',2.4,0,0.6,0.3,0.03));
