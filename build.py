@@ -7,7 +7,9 @@ python build.py --home <path>   -> same, with the home-site repo somewhere else
 """
 import base64
 import pathlib
+import datetime
 import shutil
+import subprocess
 import sys
 
 root = pathlib.Path(__file__).parent
@@ -15,8 +17,13 @@ img = base64.b64encode((root / "mapa.jpg").read_bytes()).decode()
 html = (root / "src" / "desfile.html").read_text(encoding="utf-8")
 for ph, f, mime in [("__BANNER__", "banner.jpg", "image/jpeg"), ("__ESCUDO__", "escudo.png", "image/png")]:
     html = html.replace(ph, f"data:{mime};base64," + base64.b64encode((root / f).read_bytes()).decode())
+# version = commits in the repo (+1 when src has uncommitted changes, since this build gets committed next) and build date
+git = lambda *a: subprocess.run(["git", "-C", str(root), *a], capture_output=True, text=True).stdout.strip()
+n = int(git("rev-list", "--count", "HEAD") or 0) + (1 if git("status", "--porcelain", "src") else 0)
+version = f"{n} · {datetime.datetime.now():%Y-%m-%d %H:%M}"
+html = html.replace("__VERSION__", version)
 (root / "index.html").write_text(html.replace("__MAP__", "data:image/jpeg;base64," + img), encoding="utf-8")
-print("index.html built")
+print("index.html built, versión", version)
 
 if "--home" in sys.argv:
     i = sys.argv.index("--home")
