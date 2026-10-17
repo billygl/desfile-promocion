@@ -62,6 +62,40 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .hud .tools button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
 td select{font:inherit;font-size:.82rem;padding:3px 4px;border:1px solid var(--line);border-radius:5px;background:var(--surface);color:var(--fg);max-width:220px}
 td select.manual{border-color:var(--accent);font-weight:700}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+.jump{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin:-20px calc(-1*max(16px,env(safe-area-inset-right,0px))) 0 calc(-1*max(16px,env(safe-area-inset-left,0px)));padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:var(--bg)}
+.jump .in{max-width:1180px;margin:0 auto;display:flex;gap:2px;overflow-x:auto;align-items:center;scrollbar-width:none}
+.jump a{white-space:nowrap;text-decoration:none;color:var(--fg);font-size:.85rem;padding:6px 10px;border-radius:6px}
+.jump a:hover{background:var(--line)}
+.jump a.on{background:var(--fg);color:var(--bg)}
+.jump .help{flex-shrink:0}
+.jump .help.act{background:var(--accent);border-color:var(--accent);color:#fff}
+[id^="s-"]{scroll-margin-top:64px}
+details.card>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::before{content:"";flex-shrink:0;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .15s}
+details.card[open]>summary::before{transform:rotate(45deg)}
+details.card>summary:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:4px}
+details.card>summary .hint{font-size:.8rem;color:var(--muted)}
+details.card:not([open]) > summary .hint{display:inline}
+.help{margin-left:auto;border:1px solid var(--line);border-radius:999px;font-size:.78rem;padding:4px 12px;background:var(--surface);color:var(--fg);font-weight:600}
+.help:hover{border-color:var(--fg)}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(380px,92vw);background:var(--surface);border-left:1px solid var(--line);box-shadow:-10px 0 30px rgba(0,0,0,.18);z-index:40;padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) 18px;overflow:auto;display:flex;flex-direction:column;gap:16px}
+.drawer .ph{display:flex;align-items:center;gap:8px}
+.drawer .ph h2{font-size:1.1rem}
+.drawer .ph button{margin-left:auto}
+.drawer .controls{flex-direction:column;align-items:stretch}
+.drawer .controls input[type=number],.drawer .controls select{width:100%}
+#help-ctx{background:var(--bg);border-left:3px solid var(--accent);padding:10px 12px;border-radius:0 8px 8px 0;font-size:.88rem}
+#help-ctx:empty{display:none}
+.lg{display:flex;flex-direction:column;gap:7px;font-size:.88rem}
+.lg h3{margin:0;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.lg .it{display:flex;align-items:center;gap:8px}
+.lg .sw{display:inline-block;width:22px;height:12px;border-radius:3px;flex-shrink:0}
+.lg .chip{margin-right:0;min-width:30px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
 .card p{margin:0;color:var(--muted);max-width:78ch}
 .scroll{overflow-x:auto}
@@ -87,6 +121,13 @@ tr.fam-start td{border-top:2px solid var(--line)}
 </style>
 </head>
 <body>
+<nav class="jump" aria-label="Secciones"><div class="in">
+  <a href="#s-resumen">Resumen</a><a href="#s-visor">Visor 3D</a><a href="#s-desfile">Plano desfile</a><a href="#s-barra">Plano barra</a><a href="#s-tabla">Por familia</a><a href="#s-criterios">Criterios</a>
+  <button class="help act" id="go-desfile" style="margin-left:auto">▶ Ver desfile</button>
+  <button class="help act" id="go-barra">Ver barra</button>
+  <button class="help" id="open-config" title="Tecla C">Configuración</button>
+  <button class="help" data-help="general" title="Tecla L">Leyenda</button>
+</div></nav>
 <div class="wrap">
   <header>
     <div class="eyebrow">Olimpiadas · Colegio María Alvarado</div>
@@ -94,87 +135,97 @@ tr.fam-start td{border-top:2px solid var(--line)}
     <p class="lede">Simulación 3D sobre el plano del colegio: la columna recorre la ruta roja, pasa frente al escenario y forma la barra mirando al jurado. Cada familia aparece solo con su código de iniciales.</p>
   </header>
 
-  <section class="stats" id="stats" aria-label="Resumen"></section>
+  <details class="card" id="s-resumen" open>
+    <summary><h2>Resumen</h2><button class="help" id="open-config2">Configuración</button></summary>
+    <section class="stats" id="stats" aria-label="Resumen"></section>
+  </details>
 
+  <details class="card" id="s-visor" open>
+    <summary><h2>Visor 3D</h2><button class="help" data-help="visor">Leyenda</button></summary>
+    <section class="viewer" aria-label="Animación 3D">
+      <canvas id="c3d"></canvas>
+      <div class="hud">
+        <div class="seg" role="group" aria-label="Cámara">
+          <button id="v-top" aria-pressed="false">Vista aérea</button>
+          <button id="v-3d" aria-pressed="true">3D</button>
+          <button id="v-follow" aria-pressed="false">Seguir</button>
+          <button id="v-jurado" aria-pressed="false">Vista del jurado</button>
+        </div>
+        <div class="seg tools" role="group" aria-label="Dibujar">
+          <button id="d-route" aria-pressed="false">Dibujar ruta</button>
+          <button id="d-bar" aria-pressed="false">Dibujar barra</button>
+          <button id="d-reset">Restaurar líneas</button>
+        </div>
+        <div class="phase" id="phase">Ingreso</div>
+      </div>
+      <div class="bar">
+        <button id="play" aria-pressed="false">▶ Reproducir</button>
+        <input id="time" type="range" min="0" max="100" step="0.1" value="0" aria-label="Tiempo">
+        <span id="tlabel">0:00</span>
+        <select id="speed" aria-label="Velocidad"><option value="1">×1</option><option value="3">×3</option><option value="6" selected>×6</option><option value="12">×12</option></select>
+      </div>
+    </section>
+  </details>
+
+  <details class="card" id="s-desfile" open>
+    <summary><h2>Plano del desfile</h2><button class="help" data-help="desfile">Leyenda</button></summary>
+    <p id="parade-sum"></p>
+    <div class="scroll"><svg id="svg-parade" role="img" aria-label="Formación del desfile vista desde arriba"></svg></div>
+  </details>
+
+  <details class="card" id="s-barra" open>
+    <summary><h2>Plano de la barra</h2><button class="help" data-help="barra">Leyenda</button></summary>
+    <p id="barra-sum"></p>
+    <div class="scroll"><svg id="svg-barra" role="img" aria-label="Formación de la barra vista desde arriba"></svg></div>
+  </details>
+
+  <details class="card" id="s-tabla" open>
+    <summary><h2>Propuesta por familia</h2><button class="help" data-help="tabla">Leyenda</button></summary>
+    <p>Dónde va cada integrante en el desfile y en la barra. Para repartir rápido, cambia el rol en la columna <b>Rol</b>: queda fijo para esa persona y el resto se reacomoda solo. Todo se guarda en este navegador, aunque cierres Chrome.</p>
+    <div class="row"><input id="f-filter" type="search" placeholder="Buscar código…" aria-label="Buscar código"><button class="btn" id="over-clear">Quitar asignaciones manuales</button><span class="note" id="over-msg"></span></div>
+    <div class="tablewrap"><table><thead><tr><th>Código</th><th>Integrante</th><th>Rol</th><th>Desfile</th><th>Barra</th></tr></thead><tbody id="tbody"></tbody></table></div>
+  </details>
+
+    <details class="card" id="s-criterios" open>
+      <summary><h2>Criterios usados</h2></summary>
+      <ul>
+        <li>Desfile de <b>6 de ancho</b>: cada familia camina junta, padres por fuera y su hijo al centro, dos familias por fila, agrupadas por grado (K1, K2, K3).</li>
+        <li>Filas a <span class="mono">1.2 m</span>, columnas a <span class="mono">0.9 m</span>. Muñecos y pompones los lleva el padre de afuera, alternados a lo largo del bloque.</li>
+        <li><b>LOVE · HONOR · SERVICE</b> va detrás de la pancarta, precedido por el escudo, para que se lea de frente.</li>
+        <li>El dragón va entre grados con sus 3 cargadores en fila, cada 2.4 m.</li>
+        <li>Fijos: Águila = papá de AnB; dirigen coreografía y canto = papás de CV y MG. Los demás roles se reparten solos o se fijan desde la tabla.</li>
+        <li>La línea de barra la comparten Prekinder, Kinder (nosotros) y Nursery, cada una en su columna mirando al escenario, paralela a Jr. Gregorio Paredes.</li>
+        <li>En nuestra columna: escudo, pancarta, Águila y antorcha delante; luego las letras y las familias, cada hijo entre su papá y su mamá; atrás la batucada y el dragón.</li>
+      </ul>
+      <p class="note">Escala: 0.135 m por píxel del plano, ajustada al contorno del colegio en OpenStreetMap (±10%). La ruta y la línea de barra se redibujan con los botones del visor.</p>
+    </details>
+</div>
+
+<aside id="config-panel" class="drawer" aria-label="Configuración" hidden>
+  <div class="ph"><h2>Configuración</h2><button class="btn" id="config-close">Cerrar</button></div>
   <section class="controls" aria-label="Supuestos">
     <label for="i-pct">Asistencia estimada %<input id="i-pct" type="number" min="30" max="100" value="80"></label>
     <label for="i-bat">Batucada (personas)<input id="i-bat" type="number" min="0" max="12" value="6"></label>
     <label for="i-len">Largo línea de barra (m)<input id="i-len" type="number" min="8" max="40" step="0.5" value="24"></label>
     <label for="i-mode">Barra<select id="i-mode"><option value="columna">Columna junto a Prekinder y Nursery</option><option value="filas">Filas horizontales (toda la línea)</option></select></label>
     <label for="i-slot">Nuestra columna<select id="i-slot"><option value="centro">Al centro</option><option value="izq">Izquierda (vista del jurado)</option><option value="der">Derecha (vista del jurado)</option></select></label>
-    <label for="i-face">Frente de la barra<select id="i-face"><option value="jurado">Hacia el jurado (escenario)</option><option value="sur">Hacia el sur</option></select></label>
+    <label for="i-face">Frente de la barra<select id="i-face"><option value="jurado">Hacia el jurado (escenario)</option><option value="sur">De espaldas al escenario</option></select></label>
     <label class="chk" for="i-codes"><input id="i-codes" type="checkbox" checked> Mostrar códigos en 3D</label>
   </section>
-
-  <section class="viewer" aria-label="Animación 3D">
-    <canvas id="c3d"></canvas>
-    <div class="hud">
-      <div class="seg" role="group" aria-label="Cámara">
-        <button id="v-top" aria-pressed="false">Vista aérea</button>
-        <button id="v-3d" aria-pressed="true">3D</button>
-        <button id="v-follow" aria-pressed="false">Seguir</button>
-        <button id="v-jurado" aria-pressed="false">Vista del jurado</button>
-      </div>
-      <div class="seg tools" role="group" aria-label="Dibujar">
-        <button id="d-route" aria-pressed="false">Dibujar ruta</button>
-        <button id="d-bar" aria-pressed="false">Dibujar barra</button>
-        <button id="d-reset">Restaurar líneas</button>
-      </div>
-      <div class="phase" id="phase">Ingreso</div>
-    </div>
-    <div class="bar">
-      <button id="play" aria-pressed="false">▶ Reproducir</button>
-      <input id="time" type="range" min="0" max="100" step="0.1" value="0" aria-label="Tiempo">
-      <span id="tlabel">0:00</span>
-      <select id="speed" aria-label="Velocidad"><option value="1">×1</option><option value="3">×3</option><option value="6" selected>×6</option><option value="12">×12</option></select>
-    </div>
-  </section>
-
-  <div class="legend" id="legend"></div>
-
-  <section class="card">
-    <h2>Plano del desfile</h2>
-    <p id="parade-sum"></p>
-    <div class="scroll"><svg id="svg-parade" role="img" aria-label="Formación del desfile vista desde arriba"></svg></div>
-  </section>
-
-  <section class="card">
-    <h2>Plano de la barra</h2>
-    <p id="barra-sum"></p>
-    <div class="scroll"><svg id="svg-barra" role="img" aria-label="Formación de la barra vista desde arriba"></svg></div>
-  </section>
-
-  <section class="card">
-    <h2>Propuesta por familia</h2>
-    <p>Dónde va cada integrante en el desfile y en la barra. Las filas se cuentan desde la cabeza del desfile; en la barra, la fila 1 es la más cercana al jurado y el puesto 1 es el extremo por donde llega el desfile.</p>
-    <p>Para repartir rápido, cambia el rol en la columna <b>Rol</b>: queda fijo para esa persona y el resto se reacomoda solo. Todo se guarda en este navegador, aunque cierres Chrome.</p>
-    <div class="row"><input id="f-filter" type="search" placeholder="Buscar código…" aria-label="Buscar código"><button class="btn" id="over-clear">Quitar asignaciones manuales</button><span class="note" id="over-msg"></span></div>
-    <div class="tablewrap"><table><thead><tr><th>Código</th><th>Integrante</th><th>Rol</th><th>Desfile</th><th>Barra</th></tr></thead><tbody id="tbody"></tbody></table></div>
-  </section>
-
-  <div class="grid2">
-    <section class="card">
-      <h2>Familias</h2>
-      <p>Una familia por línea: código de 2 o 3 letras, cantidad de hijos (si no es 1) y roles opcionales. Las líneas que empiezan con <span class="mono">-</span> no asisten; mientras nadie esté marcado se usa la asistencia estimada. Roles: <span class="mono">aguila pancarta bat dragon muneco pompon direccion</span> (papá o mamá; con <span class="mono">papa:</span> o <span class="mono">mama:</span> delante se elige quién) y <span class="mono">antorcha baston letra escudo</span> (hijo). <span class="mono">sin-papa</span> / <span class="mono">sin-mama</span> = asiste uno solo.</p>
-      <textarea id="fam-list" spellcheck="false" aria-label="Lista de familias"></textarea>
-      <div class="row"><button class="btn" id="fam-apply">Aplicar lista</button><button class="btn" id="fam-reset">Volver a la lista del directorio</button><span class="note" id="fam-msg"></span></div>
-    </section>
-    <section class="card">
-      <h2>Criterios usados</h2>
-      <ul>
-        <li>Desfile de <b>6 de ancho</b>: cada familia camina junta, padres por fuera y su hijo al centro, dos familias por fila. Los mellizos van en una fila propia con un padre a cada lado.</li>
-        <li>Filas a <span class="mono">1.2 m</span>, columnas a <span class="mono">0.9 m</span>. Muñecos y pompones los lleva el padre de afuera, alternados a lo largo del bloque.</li>
-        <li><b>LOVE · HONOR · SERVICE</b> va detrás de la pancarta en 3 filas (4, 5 y 7 cuadrados), precedido por el escudo, para que se lea de frente.</li>
-        <li>El dragón va al centro del bloque con sus 3 cargadores en fila, cada 2.4 m.</li>
-        <li>Los 2 papás que dirigen coreografía y canto (CV y MG) caminan por fuera de la columna y en la barra se paran en las esquinas delanteras, mirando al grupo.</li>
-        <li>Fijos: Águila = papá de AnB; dirección = papás de CV y MG. Los demás roles se reparten automáticamente y se pueden cambiar en la lista.</li>
-        <li>En la barra, de adelante hacia atrás: escudo, pancarta con Águila y antorcha, la fila de letras, los demás niños y luego los padres. Cada padre queda lo más cerca posible detrás de su hijo.</li>
-        <li>La barra queda paralela al escenario (Jr. Gregorio Paredes) y mira al escenario, donde está el jurado.</li>
-      </ul>
-      <p class="note">La escala sale del zoom de Google Maps (≈0.3 m por píxel del plano). La ruta y la línea de barra se pueden redibujar con los botones del visor; el largo real de la barra se escribe arriba.</p>
-    </section>
+  <div class="lg"><h3>Familias</h3>
+    <p class="note" style="margin:0">Una familia por línea: código de 2 o 3 letras, cantidad de hijos (si no es 1), grado de cada hijo (K1, K2, K3) y roles opcionales. <span class="mono">-</span> al inicio = no asiste; mientras nadie esté marcado se usa la asistencia estimada. Roles: <span class="mono">aguila pancarta bat dragon muneco pompon direccion</span> (con <span class="mono">papa:</span> o <span class="mono">mama:</span> se elige quién) y <span class="mono">antorcha baston letra escudo</span> (hijo). <span class="mono">sin-papa</span> / <span class="mono">sin-mama</span> = asiste uno solo.</p>
+    <textarea id="fam-list" spellcheck="false" aria-label="Lista de familias" style="min-height:260px"></textarea>
+    <div class="row"><button class="btn" id="fam-apply">Aplicar lista</button><button class="btn" id="fam-reset">Volver a la lista del directorio</button></div>
+    <span class="note" id="fam-msg"></span>
   </div>
-</div>
+  <p class="note">Todo se guarda en este navegador. Tecla C abre y cierra este panel.</p>
+</aside>
+<aside id="legend-panel" class="drawer" aria-label="Leyenda" hidden>
+  <div class="ph"><h2>Leyenda</h2><button class="btn" id="legend-close">Cerrar</button></div>
+  <div id="help-ctx"></div>
+  <div id="legend"></div>
+  <p class="note">Ábrela desde cualquier sección con el botón «Leyenda» o con la tecla L.</p>
+</aside>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -564,14 +615,20 @@ function renderInfo(pl){
     stat('6 × '+pl.rows,'columnas × filas de familias')+stat(pl.maxLon.toFixed(0)+' m','largo de la columna')+
     stat(fmtT((PATH.L+pl.maxLon)/V),'min:seg de recorrido a 1 m/s')+gradeTile;
   const sh=(svg)=>`<svg width="12" height="12" viewBox="0 0 12 12" style="vertical-align:-1px;margin-right:5px">${svg}</svg>`;
+  const it=(icon,txt)=>`<div class="it">${icon}<span>${txt}</span></div>`,swatch=c=>`<span class="sw" style="background:${c}"></span>`;
   $('legend').innerHTML=
-    `<b>Quién</b>`+
-    `<span>${sh(`<rect x="1" y="1" width="10" height="10" rx="1.5" fill="${ROLE.padre.c}"/>`)}Papá</span>`+
-    `<span>${sh('<circle cx="6" cy="6" r="5" fill="#3f9a58"/>')}Mamá</span>`+
-    `<span>${sh(`<rect x="2.5" y="2.5" width="7" height="7" transform="rotate(45 6 6)" fill="${ROLE.nino.c}"/>`)}Niño / niña</span>`+
-    `<span>pa / ma junto al código = papá o mamá con rol</span><span class="sep"></span>`+
-    `<b>Qué lleva</b>`+
-    Object.entries(ABBR).map(([k,a])=>`<span><span class="chip" style="background:${ROLE[k].c}">${k==='letra'?'L·O':a}</span>${ROLE[k].n}</span>`).join('');
+    `<div class="lg"><h3>Quién (en los planos)</h3>`+
+    it(sh(`<rect x="1" y="1" width="10" height="10" rx="1.5" fill="${ROLE.padre.c}"/>`),'Papá')+
+    it(sh('<circle cx="6" cy="6" r="5" fill="#3f9a58"/>'),'Mamá')+
+    it(sh(`<rect x="2.5" y="2.5" width="7" height="7" transform="rotate(45 6 6)" fill="${ROLE.nino.c}"/>`),'Niño o niña')+
+    it('<span class="mono" style="white-space:nowrap;min-width:46px">pa / ma</span>','junto al código: papá o mamá que tiene un rol')+`</div>`+
+    `<div class="lg"><h3>Qué lleva</h3>`+
+    Object.entries(ABBR).map(([k,a])=>it(`<span class="chip" style="background:${ROLE[k].c}">${k==='letra'?'L·O':a}</span>`,ROLE[k].n)).join('')+`</div>`+
+    `<div class="lg"><h3>En el 3D</h3>`+
+    it(swatch(ROLE.padre.c),'Papá (polo verde oscuro)')+it(swatch('#3f9a58'),'Mamá (polo verde medio, vestido)')+it(swatch(ROLE.nino.c),'Niño o niña (polo verde claro)')+
+    it(swatch('#e86fa5'),'Prekinder (referencia)')+it(swatch('#3a7bd5'),'Nursery (referencia)')+
+    it(swatch('#ff2d2d'),'Línea de barra')+it(swatch('rgba(196,35,43,.5)'),'Ruta del desfile')+
+    it(swatch('#4aa59a'),'Cancha')+it(swatch('#c98b7a'),'Techo de graderías')+`</div>`;
   $('parade-sum').innerHTML=`Columna de <b>${pl.maxLon.toFixed(1)} m</b> por <b>≈5.4 m</b> de ancho. Cabeza: Águila, antorcha, pancarta, escudo, LOVE / HONOR / SERVICE y batucada. Luego <b>${pl.rows} filas de familias</b> agrupadas por grado (${pl.GRADES.join(', ')}), con el dragón al medio. La ruta mide ≈${PATH.L.toFixed(0)} m y pasa frente al escenario antes de formar la barra.`;
   const kr=pl.kRowsB.map(r=>r.length),pr=pl.pRowsB.map(r=>r.length);
   if(pl.mode==='columna')$('barra-sum').innerHTML=`La línea de <b>${pl.Lb.toFixed(1)} m</b> la comparten las 3 promociones: <b>Kinder (nosotros, verde)</b>, Prekinder (rosado) y Nursery (azul), cada una en una columna de ${(pl.Lb/3).toFixed(1)} m mirando al jurado. Nuestra columna: escudo, pancarta, Águila y antorcha delante; los 2 que dirigen en las esquinas; LOVE HONOR SERVICE al frente; luego <b>${pl.blocks[0].rows} filas de ${pl.blocks[0].per} familias</b> (${pl.GRADES.join(', ')}), cada hijo entre su papá y su mamá; atrás la batucada y el dragón alzado. Prekinder y Nursery se dibujan solo como referencia.`;
@@ -1015,6 +1072,41 @@ $('d-route').addEventListener('click',()=>drawMode==='route'?finishDraw():startD
 $('d-bar').addEventListener('click',()=>drawMode==='bar'?cancelDraw():startDraw('bar'));
 $('d-reset').addEventListener('click',()=>{cancelDraw();delete ST.route;delete ST.bar;ROUTE=ROUTE_PX.map(q=>[...q]);BARLINE=null;$('i-len').value=24;ST.inputs['i-len']='24';saveState();rebuild();});
 // keep the moment and the camera too
+const HELP_CTX={
+  general:'',
+  visor:'En el 3D cada persona lleva su código encima; si un papá o una mamá tiene rol, el código lleva «pa» o «ma». La línea roja gruesa es la línea de barra y la delgada, la ruta.',
+  desfile:'Cada tramo es un pedazo de la columna. La cabeza va a la derecha del tramo 1 y los metros se cuentan desde la cabeza. Cada figura es una persona; debajo va su código.',
+  barra:'Se ve como la ve el jurado: el jurado está abajo y la columna crece hacia arriba. Los rectángulos rosado y azul son Prekinder y Nursery.',
+  tabla:'En Rol, «Automático» deja que el sistema reparta; si eliges un rol queda fijo para esa persona. La fila del desfile se cuenta desde la cabeza; en la barra, la fila 1 es la más cercana al jurado.'
+};
+const panel=$('legend-panel');
+const cpanel=$('config-panel');
+function openHelp(ctx){cpanel.hidden=true;$('help-ctx').textContent=HELP_CTX[ctx]||'';panel.hidden=false;$('legend-close').focus();}
+function toggleConfig(){if(cpanel.hidden){panel.hidden=true;cpanel.hidden=false;$('config-close').focus();}else cpanel.hidden=true;}
+$('open-config').addEventListener('click',toggleConfig);
+$('open-config2').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggleConfig();});
+$('config-close').addEventListener('click',()=>{cpanel.hidden=true;});
+function showViewer(){const d=$('s-visor');d.open=true;d.scrollIntoView({block:'start'});}
+$('go-desfile').addEventListener('click',()=>{showViewer();T=0;$('time').value=0;setView('follow');setPlaying(true);});
+$('go-barra').addEventListener('click',()=>{showViewer();setPlaying(false);T=PL.tEnd;$('time').value=T;update(T);setView('jurado');});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-help]');if(!b)return;e.preventDefault();e.stopPropagation();openHelp(b.dataset.help);},true);
+$('legend-close').addEventListener('click',()=>{panel.hidden=true;});
+addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&!drawMode&&(!panel.hidden||!cpanel.hidden)){panel.hidden=true;cpanel.hidden=true;return;}
+  if((e.key==='c'||e.key==='C')&&!e.ctrlKey&&!e.metaKey&&!/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||'')){toggleConfig();return;}
+  if((e.key==='l'||e.key==='L')&&!e.ctrlKey&&!e.metaKey&&!/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||'')){if(panel.hidden)openHelp('general');else panel.hidden=true;}
+});
+// collapsible sections remember how you left them
+ST.closed=ST.closed||[];
+document.querySelectorAll('details.card').forEach(d=>{
+  if(ST.closed.includes(d.id))d.open=false;
+  d.addEventListener('toggle',()=>{ST.closed=[...document.querySelectorAll('details.card:not([open])')].map(x=>x.id);saveState();if(d.id==='s-visor'&&d.open)resize();});
+});
+document.querySelectorAll('.jump a').forEach(a=>a.addEventListener('click',()=>{const d=document.querySelector(a.getAttribute('href'));if(d&&d.tagName==='DETAILS')d.open=true;}));
+// highlight the section on screen in the menu
+const navLinks=[...document.querySelectorAll('.jump a')];
+const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting)navLinks.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+en.target.id));}),{rootMargin:'-40% 0px -55% 0px'});
+document.querySelectorAll('details.card').forEach(d=>io.observe(d));
 function rememberView(){ST.T=T;ST.view=view;saveNow();}
 addEventListener('pagehide',rememberView);document.addEventListener('visibilitychange',()=>{if(document.hidden)rememberView();});
 function applyList(text,save){
