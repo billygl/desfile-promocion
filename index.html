@@ -202,7 +202,6 @@ tr.fam-start td{border-top:2px solid var(--line)}
         <div class="seg" role="group" aria-label="Cámara">
           <button id="v-top" aria-pressed="false">Vista aérea</button>
           <button id="v-3d" aria-pressed="true">3D</button>
-          <button id="v-follow" aria-pressed="false">Seguir</button>
           <button id="v-jurado" aria-pressed="false">Vista del jurado</button>
         </div>
         <div class="seg" role="group" aria-label="Capas">
@@ -272,7 +271,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
       </ul>
       <p class="note">Escala: 0.135 m por píxel del plano, ajustada al contorno del colegio en OpenStreetMap (±10%). La ruta y la línea de barra se redibujan con los botones del visor.</p>
     </details>
-  <footer class="ver">Versión 34 · 2026-10-17 06:48</footer>
+  <footer class="ver">Versión 35 · 2026-10-17 06:52</footer>
 </div>
 
 <aside id="att-panel" class="drawer" aria-label="Asistencia" hidden>
@@ -1269,23 +1268,25 @@ function update(t){
   if(promoGroup)promoGroup.visible=arrived===PL.P.length;
   if(!drawMode)$('phase').textContent=(!playing&&Math.abs(t-PL.tInit)<0.05?'Inicio · todos juntos antes de entrar al patio':(arrived===PL.P.length?'Barra lista · ¡a cantar!':arrived>0?`Formando barra · ${arrived}/${PL.P.length}`:started===0?'Ingreso':`Desfile · ${started}/${PL.P.length} en ruta`));
   $('tlabel').textContent=fmtT(t-PL.tInit);
-  if(view==='follow'){const h=PL.P.reduce((m,p)=>p.lon<m.lon?p:m).q;
-    controls.target.lerp(new THREE.Vector3(h.x,1,h.z),0.08);camera.position.lerp(new THREE.Vector3(h.x-h.fx*16+6,13,h.z-h.fz*16+6),0.05);}
+  // while ▶ Desfile plays the camera glides with the group, keeping its angle and zoom
+  if(following&&playing){const qs=PL.P.map(p=>p.q).filter(Boolean);
+    if(qs.length){const d=new THREE.Vector3(qs.reduce((a,q)=>a+q.x,0)/qs.length-controls.target.x,0,qs.reduce((a,q)=>a+q.z,0)/qs.length-controls.target.z).multiplyScalar(0.06);
+      controls.target.add(d);camera.position.add(d);}}
 }
-let view='3d';
+let view='3d',following=false;
+// any zoom, turn or pan by the viewer stops the automatic follow
+controls.addEventListener('start',()=>{following=false;});
 function setView(v){
-  view=v;['top','3d','follow','jurado'].forEach(k=>$('v-'+k).setAttribute('aria-pressed',String(k===v)));
+  view=v;['top','3d','jurado'].forEach(k=>$('v-'+k).setAttribute('aria-pressed',String(k===v)));
   const ctr=W(fromWall(0,13));
-  controls.enabled=v!=='follow';
   if(v==='top'){camera.position.set(ctr.x,55,ctr.z+0.01);controls.target.set(ctr.x,0,ctr.z);}
   else if(v==='3d'){const c=W(fromWall(0,12));camera.position.set(c.x-NORTH.x*30-EAST.x*16,26,c.z-NORTH.z*30-EAST.z*16);controls.target.set(c.x,0,c.z);}
   else if(v==='jurado'){const j=W(SITE.stage),m=PL.mode==="columna"?PL.at(PL.blocks[0].al,8):PL.ctr;
     const jx=j.x+EAST.x*-2.4-NORTH.x*2.6,jz=j.z+EAST.z*-2.4-NORTH.z*2.6;
     camera.position.set(jx,5.5,jz);controls.target.set(m.x,1.2,m.z);}
-  else{const h=PL.P[0].q||{x:0,z:0,fx:0,fz:-1};camera.position.set(h.x-h.fx*16+6,13,h.z-h.fz*16+6);controls.target.set(h.x,1,h.z);}
   controls.update();
 }
-['top','3d','follow','jurado'].forEach(k=>$('v-'+k).addEventListener('click',()=>setView(k)));
+['top','3d','jurado'].forEach(k=>$('v-'+k).addEventListener('click',()=>setView(k)));
 // stage 1 = the column walks the route until the head reaches the barra; stage 2 = everyone takes their place
 let stageEnd=null;
 const stageOf=t=>t<PL.tStage2?1:2;
@@ -1297,24 +1298,24 @@ function routeState(){
 // three moments: the parade column formed (still), the transition (animated) and the barra (still)
 // frame the whole route so the parade column is in view
 function frameRoute(){if(!ROUTE)return;const w=ROUTE.map(W),cx=w.reduce((a,q)=>a+q.x,0)/w.length,cz=w.reduce((a,q)=>a+q.z,0)/w.length;
-  view='3d';['top','3d','follow','jurado'].forEach(k=>$('v-'+k).setAttribute('aria-pressed',String(k==='3d')));controls.enabled=true;
+  view='3d';['top','3d','jurado'].forEach(k=>$('v-'+k).setAttribute('aria-pressed',String(k==='3d')));controls.enabled=true;
   camera.position.set(cx-NORTH.x*30-EAST.x*16,30,cz-NORTH.z*30-EAST.z*16);controls.target.set(cx,0,cz);controls.update();}
 // center the camera on where everyone is now, keeping the aerial view or using the 3D angle
 function focusCrowd(){const qs=PL.P.map(p=>p.q).filter(Boolean);if(!qs.length)return;
   const cx=qs.reduce((a,q)=>a+q.x,0)/qs.length,cz=qs.reduce((a,q)=>a+q.z,0)/qs.length,r=Math.max(6,...qs.map(q=>Math.hypot(q.x-cx,q.z-cz)));
   if(view==='top'){camera.position.set(cx,Math.max(30,r*2.6),cz+0.01);}
-  else{view='3d';['top','3d','follow','jurado'].forEach(k=>$('v-'+k).setAttribute('aria-pressed',String(k==='3d')));controls.enabled=true;
+  else{view='3d';['top','3d','jurado'].forEach(k=>$('v-'+k).setAttribute('aria-pressed',String(k==='3d')));controls.enabled=true;
     const k=Math.max(1,r/12);camera.position.set(cx-NORTH.x*24*k-EAST.x*12*k,20*k,cz-NORTH.z*24*k-EAST.z*12*k);}
   controls.target.set(cx,0,cz);controls.update();}
 function showMoment(n){setPlaying(false);stageEnd=null;T=n===1?PL.tInit:PL.tEnd;$('time').value=T;update(T);
-  if(n===2&&(view==='follow'||view==='jurado'))setView('jurado');else focusCrowd();}
+  if(n===2&&view==='jurado')setView('jurado');else focusCrowd();}
 function playStage(n){showMoment(n);}
 $('st-1').addEventListener('click',()=>playStage(1));
 $('st-2').addEventListener('click',()=>playStage(2));
-function setPlaying(v){playing=v;$('play').setAttribute('aria-pressed',String(v));$('play').textContent=v?'❚❚ Pausa':'▶ Desfile';}
+function setPlaying(v){playing=v;if(!v)following=false;$('play').setAttribute('aria-pressed',String(v));$('play').textContent=v?'❚❚ Pausa':'▶ Desfile';}
 // ▶ Desfile always starts from the initial position, framed by the camera
 $('play').addEventListener('click',()=>{if(playing){setPlaying(false);return;}
-  T=PL.tInit;stageEnd=PL.tEnd;$('time').value=T;update(T);focusCrowd();setPlaying(true);});
+  T=PL.tInit;stageEnd=PL.tEnd;$('time').value=T;update(T);focusCrowd();setPlaying(true);following=true;});
 $('time').addEventListener('input',e=>{T=parseFloat(e.target.value);setPlaying(false);update(T);});
 ['i-bat','i-len','i-face','i-mode','i-slot','i-bloques'].forEach(id=>$(id).addEventListener('change',rebuild));
 $('i-emoji').addEventListener('change',()=>{if(PL)renderInfo(PL);});
@@ -1499,7 +1500,7 @@ $('fam-list').value=store.get('desfile-familias-v3')||sampleFamilies();
 {const d=store.get('desfile-familias-borrador');if(d&&d!==$('fam-list').value){$('fam-list').value=d;$('fam-msg').textContent='Recuperé cambios sin aplicar de la lista. Pulsa "Aplicar lista" para usarlos.';}}
 $('fam-list').addEventListener('input',e=>store.set('desfile-familias-borrador',e.target.value));
 FAMS=parseFamilies(store.get('desfile-familias-v3')||sampleFamilies());
-T=typeof ST.T==='number'?ST.T:1e9;if(ST.view)view=ST.view;
+T=typeof ST.T==='number'?ST.T:1e9;if(ST.view&&ST.view!=='follow')view=ST.view;
 $('need-draw').addEventListener('click',()=>{toggleConfig();$('adv').open=true;$('adv').scrollIntoView({block:'start'});});
 overMsg();
 rebuild();resize();
