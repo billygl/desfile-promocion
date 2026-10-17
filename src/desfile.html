@@ -92,6 +92,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
     <label for="i-pct">Asistencia estimada %<input id="i-pct" type="number" min="30" max="100" value="80"></label>
     <label for="i-bat">Batucada (personas)<input id="i-bat" type="number" min="0" max="12" value="6"></label>
     <label for="i-len">Largo línea de barra (m)<input id="i-len" type="number" min="8" max="40" step="0.5" value="14"></label>
+    <label for="i-mode">Barra<select id="i-mode"><option value="grados">Por grados: columnas lado a lado</option><option value="filas">Filas horizontales</option></select></label>
     <label for="i-face">Frente de la barra<select id="i-face"><option value="jurado">Hacia el jurado (escenario)</option><option value="sur">Hacia el sur</option></select></label>
     <label class="chk" for="i-codes"><input id="i-codes" type="checkbox" checked> Mostrar códigos en 3D</label>
   </section>
@@ -199,64 +200,64 @@ const SITE_ROT=-Math.atan2(EAST.z,EAST.x); // local +x = east along 28 de Julio,
 
 /* ---------- families ---------- */
 // Family codes from the class directory (initials only). Mark absences with "-".
-const DEFAULT_LIST=`# Códigos del directorio. "-" al inicio = no asiste; número = hijos en la promo.
-AO
-AmB
-AnB papa:aguila
-BJ
-BG
-BF
-BV
-CaiM
-CB
-CN
-CasM
-ChA
-CL
-CV papa:direccion
-CE
-DG
-DVG
-FC
-FY
-GH
-GT
-GA
-GL
-GJ
-GN
-GV
-HeC
-HR
-HuC
-LM
-LS
-LCh 2
-MF
-MV
-MS
-MQ
-MG papa:direccion
-NC
-OV
-OS
-PV
-PAp
-PAn
-PR
-RiF
-RD
-RR
-RuF
-SF
-SE
-SCM
-SS
-SL
-TP
-TA
-TB
-VC`;
+const DEFAULT_LIST=`# Códigos del directorio. "-" al inicio = no asiste; número = hijos en la promo; K1/K2/K3 = grado de cada hijo.
+AO K3
+AmB K2
+AnB K1 papa:aguila
+BJ K3
+BG K1
+BF K1
+BV K3
+CaiM K3
+CB K3
+CN K1
+CasM K3
+ChA K1
+CL K3
+CV K2 papa:direccion
+CE K1
+DG K1
+DVG K2
+FC K2
+FY K1
+GH K1
+GT K3
+GA K2
+GL K1
+GJ K1
+GN K1
+GV K1
+HeC K2
+HR K3
+HuC K1
+LM K3
+LS K1
+LCh 2 K1 K2
+MF K2
+MV K2
+MS K3
+MQ K3
+MG K2 papa:direccion
+NC K2
+OV K3
+OS K2
+PV K3
+PAp K3
+PAn K3
+PR K3
+RiF K1
+RD K3
+RR K3
+RuF K2
+SF K1
+SE K2
+SCM K2
+SS K1
+SL K1
+TP K2
+TA K2
+TB K2
+VC K2`;
 function sampleFamilies(){return DEFAULT_LIST;}
 function parseFamilies(text){
   const seen={};
@@ -265,10 +266,11 @@ function parseFamilies(text){
     const t=l.replace(/^[-+]\s*/,'').split(/[\s,;]+/).filter(Boolean);
     let code=(t[0]||'?').slice(0,5);
     if(seen[code])code+=(++seen[code]);else seen[code]=1;
-    const f={code,kids:1,genders:['papa','mama'],roles:[],kidRoles:[],absent,marked};
+    const f={code,kids:1,genders:['papa','mama'],grades:[],roles:[],kidRoles:[],absent,marked};
     t.slice(1).forEach(x=>{x=x.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
       const [who,r]=x.includes(':')?x.split(':'):[null,x];
       if(/^\d$/.test(r))f.kids=+r;
+      else if(/^k\d$/.test(r))f.grades.push(r.toUpperCase());
       else if(r==='sin-papa')f.genders=['mama'];
       else if(r==='sin-mama')f.genders=['papa'];
       else if(KID_ROLES.includes(r))f.kidRoles.push(r);
@@ -281,7 +283,7 @@ const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},se
 
 function cfg(){
   const n=(id,d)=>{const v=parseFloat($(id).value);return isFinite(v)?v:d};
-  return {pct:Math.min(100,Math.max(30,n('i-pct',80))),bat:Math.max(0,Math.round(n('i-bat',6))),len:n('i-len',14),face:$('i-face').value};
+  return {pct:Math.min(100,Math.max(30,n('i-pct',80))),bat:Math.max(0,Math.round(n('i-bat',6))),mode:$('i-mode').value,len:n('i-len',14),face:$('i-face').value};
 }
 
 /* ---------- path ---------- */
@@ -318,7 +320,7 @@ function plan(c,fams){
   const add=(role,f,kid,idx)=>{const p={role,kid,fam:f.code,f,idx,id:P.length};P.push(p);return p};
   att.forEach(f=>{f.par=[];f.kid=[];
     f.genders.forEach((g,i)=>{const p=add('padre',f,false,i+1);p.g=g;f.par.push(p);});
-    for(let i=0;i<f.kids;i++)f.kid.push(add('nino',f,true,i+1));});
+    for(let i=0;i<f.kids;i++){const k=add('nino',f,true,i+1);k.grade=f.grades[i]||f.grades[0]||'Promo';f.kid.push(k);}});
   const count=r=>P.filter(p=>p.role===r).length;
   const need={direccion:2,aguila:1,pancarta:3,bat:c.bat,dragon:3,muneco:6,pompon:6,antorcha:1,baston:8,escudo:1,letra:WORDS.join('').length};
   const freePar=(f,g)=>f.par.find(p=>p.role==='padre'&&(!g||p.g===g));
@@ -360,12 +362,22 @@ function plan(c,fams){
     for(let r=0;r*3<bats.length;r++){const row=bats.slice(r*3,r*3+3);row.forEach((p,j)=>put(p,(j-(row.length-1)/2)*1.5,lon));lon+=ROW;}
     lon+=0.8;}
 
-  // family block
-  const units=att.map(f=>({f,par:f.par.filter(p=>['padre','muneco','pompon'].includes(p.role)),kids:f.kid.filter(k=>k.role==='nino'||k.role==='baston')}))
-    .filter(u=>u.par.length||u.kids.length);
-  const rows=[];let pend=null;
-  units.forEach(u=>{if(u.kids.length>=2)rows.push({type:'full',u});else if(pend){rows.push({type:'pair',l:pend,r:u});pend=null;}else pend=u;});
-  if(pend)rows.push({type:'pair',l:pend,r:null});
+  // family block, grouped by grade (a family with kids in two grades splits its parents)
+  const units=[];
+  att.forEach(f=>{
+    const kids=f.kid.filter(k=>k.role==='nino'||k.role==='baston');
+    const par=f.par.filter(p=>['padre','muneco','pompon'].includes(p.role));
+    const gs=[...new Set(f.kid.map(k=>k.grade))];
+    const byG={};gs.forEach(g=>byG[g]={f,g,par:[],kids:[]});
+    kids.forEach(k=>byG[k.grade].kids.push(k));
+    par.forEach((p,i)=>{const g=gs[i%gs.length];byG[g].par.push(p);p.grade=g;});
+    gs.forEach(g=>{if(byG[g].par.length||byG[g].kids.length)units.push(byG[g]);});
+  });
+  const GRADES=[...new Set(units.map(u=>u.g))].sort();
+  const rows=[];
+  GRADES.forEach(g=>{let pend=null;
+    units.filter(u=>u.g===g).forEach(u=>{if(u.kids.length>=2)rows.push({type:'full',u,g});else if(pend){rows.push({type:'pair',l:pend,r:u,g});pend=null;}else pend=u;});
+    if(pend)rows.push({type:'pair',l:pend,r:null,g});});
   // props on the outer parent of evenly spaced rows
   const pairRows=rows.filter(r=>r.type==='pair');
   let needM=need.muneco-count('muneco'),needP=need.pompon-count('pompon');
@@ -381,21 +393,25 @@ function plan(c,fams){
   const bOrder=[...pickEven(pairRows,Math.ceil(needB/2)),...pairRows];
   for(const row of bOrder){if(needB<=0)break;[row.l,row.r].forEach(u=>{if(!u||needB<=0)return;const k=u.kids.find(x=>x.role==='nino');if(k){k.role='baston';needB--;}});}
 
-  sections.push({name:`Familias · ${rows.length} filas`,lon});
   by('direccion').forEach((p,i)=>put(p,i%2?3.4:-3.4,lon+Math.floor(i/2)*1.2));
-  const half=Math.floor(rows.length/2);
   const drs=by('dragon');
-  rows.forEach((row,i)=>{
-    if(i===half&&drs.length){sections.push({name:'Dragón',lon});drs.forEach((p,j)=>put(p,0,lon+j*2.4));lon+=(drs.length-1)*2.4+1.6;}
+  const placeRow=(row,lon,o)=>{ // o: lateral offsets {outer,inner,kid}
     if(row.type==='full'){const u=row.u;
-      u.par.sort((a,b)=>b.role!=='padre'?1:-1).forEach((p,j)=>put(p,u.par.length===1?-1.35:(j?1.35:-1.35),lon));
-      u.kids.forEach((k,j)=>put(k,(j-(u.kids.length-1)/2)*0.9,lon));}
+      u.par.forEach((p,j)=>row.set(p,u.par.length===1?-o.inner:(j?o.inner:-o.inner),lon));
+      u.kids.forEach((k,j)=>row.set(k,(j-(u.kids.length-1)/2)*o.kid*2,lon));}
     else [[row.l,-1],[row.r,1]].forEach(([u,s])=>{if(!u)return;
       const ps=[...u.par].sort((a,b)=>(a.role==='padre')-(b.role==='padre'));
-      ps.forEach((p,j)=>put(p,s*(ps.length===1?1.35:(j===0?2.25:1.35)),lon));
-      u.kids.forEach(k=>put(k,s*0.45,lon));});
-    lon+=ROW;
+      ps.forEach((p,j)=>row.set(p,s*(ps.length===1?o.inner:(j===0?o.outer:o.inner)),lon));
+      u.kids.forEach(k=>row.set(k,s*o.kid,lon));});
+  };
+  GRADES.forEach((g,gi)=>{
+    if(gi===Math.floor(GRADES.length/2)&&gi>0&&drs.length){sections.push({name:'Dragón',lon});drs.forEach((p,j)=>put(p,0,lon+j*2.4));lon+=(drs.length-1)*2.4+1.6;}
+    const gr=rows.filter(r=>r.g===g);
+    sections.push({name:`${g} · ${gr.length} filas`,lon});
+    gr.forEach(row=>{row.set=put;placeRow(row,lon,{outer:2.25,inner:1.35,kid:0.45});lon+=ROW;});
+    lon+=0.6;
   });
+  if(GRADES.length<2&&drs.length)drs.forEach((p,j)=>put(p,0,lon+j*2.4));
   P.forEach(p=>{if(p.lon===undefined)put(p,0,lon);});
   const maxLon=Math.max(...P.map(p=>p.lon));
   const lons=[...new Set(P.map(p=>p.lon.toFixed(2)))].sort((a,b)=>a-b);
@@ -429,14 +445,28 @@ function plan(c,fams){
       for(let j=0;j<k;j++)row.push(at(mid+(j-(k-1)/2)*gap+(r%2?gap/2:0),dp,rowNo));rs.push(row);dp+=0.75;rowNo++;}
     return rs;
   }
+  let kRowsB=[],pRowsB=[],blocks=[];
+  if(c.mode==='grados'){
+    const G=GRADES.length,bs=Lb/G,dp0=dp+0.3;let maxDp=dp0;
+    GRADES.forEach((g,gi)=>{
+      const cAl=mid+((G-1)/2-gi)*bs; // first grade on the jury's left
+      const gr=rows.filter(r=>r.g===g);
+      gr.forEach((row,r)=>{const d=dp0+r*0.85;maxDp=Math.max(maxDp,d);
+        row.set=(p,lat,dd)=>{p.b=at(cAl-lat,dd,g+'·'+(r+1));p.b.blk=g;p.b.r=r+1;};
+        placeRow(row,d,{outer:1.45,inner:0.9,kid:0.3});});
+      blocks.push({g,al:cAl,rows:gr.length});
+    });
+    drs.forEach((p,j)=>p.b=at(mid+(j-(drs.length-1)/2)*2.4,maxDp+1.0,'F'));
+    P.filter(p=>!p.b).forEach((p,i)=>p.b=at(mid+(i-0.5)*0.7,maxDp+1.8,'F'));
+  }else{
   const kidList=P.filter(p=>p.kid&&!p.b).sort((a,b)=>a.lon-b.lon||a.lat-b.lat);
-  const kGap=0.55,kRowsB=rowsOf(kidList.length,kGap,Math.max(4,Math.floor(Lb/kGap)+1));
+  const kGap=0.55;kRowsB=rowsOf(kidList.length,kGap,Math.max(4,Math.floor(Lb/kGap)+1));
   kRowsB.flat().forEach((s,i)=>{kidList[i].b=s;});
   const famAl={};
   att.forEach(f=>{const ks=f.kid.filter(k=>k.b&&k.b.row!=='D');famAl[f.code]=ks.length?ks.reduce((a,k)=>a+k.b.al,0)/ks.length:mid;});
   const parList=P.filter(p=>!p.b);
   dp+=0.15;
-  const pGap=0.6,pRowsB=rowsOf(parList.length,pGap,Math.max(4,Math.floor(Lb/pGap)+1));
+  const pGap=0.6;pRowsB=rowsOf(parList.length,pGap,Math.max(4,Math.floor(Lb/pGap)+1));
   const used=new Set();
   const lastR=pRowsB[pRowsB.length-1]||[],firstR=pRowsB.length>1?pRowsB[0]:lastR;
   const zip=(holders,slots)=>{holders.sort((a,b)=>famAl[a.fam]-famAl[b.fam]);slots.sort((a,b)=>a.al-b.al);holders.forEach((p,i)=>{if(slots[i]){p.b=slots[i];used.add(slots[i]);}});};
@@ -449,13 +479,14 @@ function plan(c,fams){
   P.filter(p=>!p.b).sort((a,b)=>famAl[a.fam]-famAl[b.fam]).forEach(p=>{
     let best=null,bc=1e9;free.forEach((s,i)=>{const cst=Math.abs(s.al-famAl[p.fam])+0.35*(s.row-1);if(cst<bc){bc=cst;best=i;}});
     p.b=best!==null?free.splice(best,1)[0]:at(mid,dp+1,rowNo);});
+  }
   // puesto within each barra row, counted from the west end
   const byRow={};P.forEach(p=>{(byRow[p.b.row]=byRow[p.b.row]||[]).push(p);});
   Object.values(byRow).forEach(list=>list.sort((a,b)=>a.b.al-b.b.al).forEach((p,i)=>p.bpos=i+1));
 
   P.forEach(p=>{const e=pathAt(PATH.L),d=pathDir(PATH.L);p.e={x:e.x-d.z*p.lat,z:e.z+d.x*p.lat};p.D=Math.hypot(p.b.x-p.e.x,p.b.z-p.e.z);});
   const tEnd=Math.max(...P.map(p=>(p.lon+PATH.L+p.D)/V))+2;
-  return {P,att,fams,kids:P.filter(p=>p.kid).length,parents:P.filter(p=>!p.kid).length,rows:rows.length,maxLon,sections,Lb,nb,mid,kRowsB,pRowsB,letterRow:letters.length>0,tEnd,A,B,ctr};
+  return {P,att,fams,kids:P.filter(p=>p.kid).length,parents:P.filter(p=>!p.kid).length,rows:rows.length,maxLon,sections,Lb,nb,mid,kRowsB,pRowsB,blocks,GRADES,mode:c.mode,letterRow:letters.length>0,tEnd,A,B,ctr};
 }
 
 /* ---------- stats, diagrams, table ---------- */
@@ -464,11 +495,12 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',
 function renderInfo(pl){
   const stat=(v,l)=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`;
   const nRowsB=(pl.letterRow?1:0)+pl.kRowsB.length+pl.pRowsB.length;
+  const gradeTile=pl.mode==='grados'?stat(pl.blocks.length+' × '+Math.max(...pl.blocks.map(b=>b.rows)),'barra: columnas por grado × filas'):stat(nRowsB+' filas','barra, + escudo y pancarta delante');
   const pct=Math.round(100*pl.att.length/pl.fams.length),est=pl.fams.some(f=>f.est);
   $('stats').innerHTML=
     stat(pl.P.length,'personas')+stat(pl.att.length+' / '+pl.fams.length,'familias asisten ('+pct+'%'+(est?', estimado':'')+')')+stat(pl.kids,'niños')+stat(pl.parents,'padres y madres')+
     stat('6 × '+pl.rows,'columnas × filas de familias')+stat(pl.maxLon.toFixed(0)+' m','largo de la columna')+
-    stat(fmtT((PATH.L+pl.maxLon)/V),'min:seg de recorrido a 1 m/s')+stat(nRowsB+' filas','barra, + escudo y pancarta delante');
+    stat(fmtT((PATH.L+pl.maxLon)/V),'min:seg de recorrido a 1 m/s')+gradeTile;
   const sh=(svg)=>`<svg width="12" height="12" viewBox="0 0 12 12" style="vertical-align:-1px;margin-right:5px">${svg}</svg>`;
   $('legend').innerHTML=
     `<span>${sh('<rect x="1" y="1" width="10" height="10" rx="1.5" fill="currentColor"/>')}Papá</span>`+
@@ -477,9 +509,10 @@ function renderInfo(pl){
     `<span style="color:var(--muted)">· color = rol:</span>`+
     `<span><i style="background:${ROLE.padre.c}"></i>Papá sin rol</span><span><i style="background:#5b8fc7"></i>Mamá sin rol</span>`+
     Object.entries(ROLE).filter(([k])=>k!=='padre').map(([k,r])=>`<span><i style="background:${r.c}"></i>${r.n}</span>`).join('');
-  $('parade-sum').innerHTML=`Columna de <b>${pl.maxLon.toFixed(1)} m</b> por <b>≈5.4 m</b> de ancho. Cabeza: Águila, antorcha, pancarta, escudo, LOVE / HONOR / SERVICE y batucada. Luego <b>${pl.rows} filas de familias</b> con el dragón al medio. La ruta mide ≈${PATH.L.toFixed(0)} m y pasa frente al escenario antes de formar la barra.`;
+  $('parade-sum').innerHTML=`Columna de <b>${pl.maxLon.toFixed(1)} m</b> por <b>≈5.4 m</b> de ancho. Cabeza: Águila, antorcha, pancarta, escudo, LOVE / HONOR / SERVICE y batucada. Luego <b>${pl.rows} filas de familias</b> agrupadas por grado (${pl.GRADES.join(', ')}), con el dragón al medio. La ruta mide ≈${PATH.L.toFixed(0)} m y pasa frente al escenario antes de formar la barra.`;
   const kr=pl.kRowsB.map(r=>r.length),pr=pl.pRowsB.map(r=>r.length);
-  $('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela a la Av. 28 de Julio y mirando al jurado. Delante: escudo, pancarta, Águila y antorcha. Fila 1: <b>LOVE HONOR SERVICE</b>. Luego ${kr.length} filas de niños (${kr.join(' + ')}) y ${pr.length} de padres (${pr.join(' + ')}), en tresbolillo para que todos vean. Batucada al costado este.`;
+  if(pl.mode==='grados')$('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela a la Av. 28 de Julio y mirando al jurado. Delante: escudo, pancarta, Águila, antorcha y los 2 que dirigen. Fila 1: <b>LOVE HONOR SERVICE</b>. Detrás, <b>una columna por grado</b> (${pl.blocks.map(b=>b.g+': '+b.rows+' filas').join(', ')}), lado a lado, de ${(pl.Lb/pl.blocks.length).toFixed(1)} m de ancho cada una: el hijo al centro y sus padres a los costados, como en el desfile. El dragón se alza detrás de todos y la batucada va al costado.`;
+  else $('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela a la Av. 28 de Julio y mirando al jurado. Delante: escudo, pancarta, Águila y antorcha. Fila 1: <b>LOVE HONOR SERVICE</b>. Luego ${kr.length} filas de niños (${kr.join(' + ')}) y ${pr.length} de padres (${pr.join(' + ')}), en tresbolillo para que todos vean. Batucada al costado este.`;
   drawParade(pl);drawBarra(pl);renderTable(pl);
 }
 const label=p=>p.letter||p.fam;
@@ -513,9 +546,9 @@ function drawBarra(pl){
   const k=40,all=pl.P.map(p=>p.b);
   const minA=Math.min(0,...all.map(b=>b.al))-1,maxA=Math.max(pl.Lb,...all.map(b=>b.al))+1;
   const minD=Math.min(...all.map(b=>b.dp))-1.4,maxD=Math.max(...all.map(b=>b.dp))+0.8;
-  const w=(maxA-minA)*k,h=(maxD-minD)*k+22;
+  const w=(maxA-minA)*k,h=(maxD-minD)*k+40;
   // jury at the top, rows going down
-  const X=a=>(maxA-a)*k, Y=d=>(maxD-d)*k+6;
+  const X=a=>(maxA-a)*k, Y=d=>(maxD-d)*k+24;
   let g=`<text x="${X(pl.mid)}" y="${h-4}" font-size="11" text-anchor="middle" fill="currentColor">▼ jurado / escenario (vista desde el jurado)</text>`;
   g+=`<line x1="${X(0)}" x2="${X(pl.Lb)}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--accent)" stroke-width="3" opacity=".8"/>`;
   g+=`<text x="${X(0)}" y="${Y(0)+12}" font-size="9" text-anchor="end">línea ${pl.Lb.toFixed(1)} m</text>`;
@@ -524,6 +557,7 @@ function drawBarra(pl){
   const pa=pl.P.filter(p=>p.role==='pancarta').map(p=>p.b);
   if(pa.length)g+=`<line x1="${X(Math.min(...pa.map(b=>b.al)))-8}" x2="${X(Math.max(...pa.map(b=>b.al)))+8}" y1="${Y(pa[0].dp)+9}" y2="${Y(pa[0].dp)+9}" stroke="${ROLE.pancarta.c}" stroke-width="4" opacity=".6"/>`;
   pl.P.forEach(p=>g+=dot(X(p.b.al),Y(p.b.dp),p,p.kid?5:6.5,true));
+  (pl.blocks||[]).forEach(b=>g+=`<text x="${X(b.al)}" y="12" font-size="12" font-weight="600" text-anchor="middle" fill="currentColor">${esc(b.g)}</text>`);
   const s=$('svg-barra');s.setAttribute('viewBox',`0 0 ${w} ${h}`);s.style.color='var(--fg)';s.innerHTML=g;
 }
 function renderTable(pl){
@@ -531,10 +565,10 @@ function renderTable(pl){
   const side=p=>p.lat<-0.1?'izquierda':p.lat>0.1?'derecha':'centro';
   const who=p=>p.kid?(p.f.kids>1?'Hijo/a '+p.idx:'Hijo/a'):GENDER[p.g];
   const rol=p=>p.role==='padre'||p.role==='nino'?'—':p.role==='letra'?`Letra ${p.letter} (${p.word})`:ROLE[p.role].n;
-  const bar=p=>p.b.row==='D'?'Delante de la línea':p.b.row==='C'?'Costado (batucada)':`Fila ${p.b.row} · puesto ${p.bpos}`;
+  const bar=p=>p.b.blk?`Columna ${p.b.blk} · fila ${p.b.r} · ${p.b.al>(pl.blocks.find(b=>b.g===p.b.blk)||{al:0}).al+0.1?'izquierda':p.b.al<(pl.blocks.find(b=>b.g===p.b.blk)||{al:0}).al-0.1?'derecha':'centro'}`:p.b.row==='F'?'Detrás de las columnas':p.b.row==='D'?'Delante de la línea':p.b.row==='C'?'Costado (batucada)':`Fila ${p.b.row} · puesto ${p.bpos}`;
   const list=pl.P.filter(p=>!q||p.fam.toUpperCase().includes(q)).sort((a,b)=>a.fam.localeCompare(b.fam)||a.kid-b.kid||a.idx-b.idx);
   let last='';
-  $('tbody').innerHTML=list.map(p=>{const st=p.fam!==last?' class="fam-start"':'';const code=p.fam!==last?esc(p.fam):'';last=p.fam;
+  $('tbody').innerHTML=list.map(p=>{const st=p.fam!==last?' class="fam-start"':'';const code=p.fam!==last?esc(p.fam)+' <span style="color:var(--muted);font-weight:400">'+[...new Set(p.f.kid.map(k=>k.grade))].join('/')+'</span>':'';last=p.fam;
     return `<tr${st}><td class="code">${code}</td><td><i style="background:${ROLE[p.role].c}"></i>${who(p)}</td><td>${esc(rol(p))}</td><td>Fila ${p.prow} · ${side(p)}</td><td>${bar(p)}</td></tr>`;}).join('')
     +pl.fams.filter(f=>(f.absent||f.est)&&(!q||f.code.toUpperCase().includes(q))).map(f=>`<tr class="fam-start"><td class="code">${esc(f.code)}</td><td colspan="4">${f.est?'No asiste (estimado por el % de asistencia)':'No asiste'}</td></tr>`).join('');
 }
@@ -826,7 +860,7 @@ function setView(v){
 function setPlaying(v){playing=v;$('play').setAttribute('aria-pressed',String(v));$('play').textContent=v?'❚❚ Pausa':'▶ Reproducir';}
 $('play').addEventListener('click',()=>{if(!playing&&T>=PL.tEnd)T=0;setPlaying(!playing);});
 $('time').addEventListener('input',e=>{T=parseFloat(e.target.value);setPlaying(false);update(T);});
-['i-pct','i-bat','i-len','i-face'].forEach(id=>$(id).addEventListener('change',rebuild));
+['i-pct','i-bat','i-len','i-face','i-mode'].forEach(id=>$(id).addEventListener('change',rebuild));
 $('i-codes').addEventListener('change',e=>PL.P.forEach(p=>{const l=p.obj.getObjectByName('code');if(l)l.visible=e.target.checked;}));
 $('f-filter').addEventListener('input',()=>renderTable(PL));
 function applyList(text,save){
