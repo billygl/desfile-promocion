@@ -546,6 +546,8 @@ function plan(c,fams){
   sections.push({name:'Águila',lon});by('aguila').forEach(p=>put(p,0,lon));lon+=2.4;
   sections.push({name:'Antorcha',lon});by('antorcha').forEach(p=>put(p,0,lon));lon+=2.0;
   sections.push({name:'Pancarta',lon});by('pancarta').forEach((p,i,a)=>put(p,(i-(a.length-1)/2)*1.6,lon));lon+=2.0;
+  const missA=by('miss');
+  if(missA.length){sections.push({name:'Misses',lon});missA.forEach((m,i)=>put(m,(i-(missA.length-1)/2)*0.9,lon));lon+=1.6;}
   sections.push({name:'Escudo',lon});by('escudo').forEach(p=>put(p,0,lon));lon+=1.6;
   // letters spell the words row by row
   const letters=by('letra');let li=0;
@@ -605,7 +607,6 @@ function plan(c,fams){
     if(gi===Math.floor(GRADES.length/2)&&gi>0&&drs.length){sections.push({name:'Dragón',lon});drs.forEach((p,j)=>put(p,0,lon+j*2.4));lon+=(drs.length-1)*2.4+1.6;}
     const gr=rows.filter(r=>r.g===g);
     sections.push({name:`${g} · ${gr.length} filas`,lon});
-    by('miss').filter(m=>m.grade===g).forEach((m,j)=>put(m,j%2?3.4:-3.4,lon+(gi===0?2.4:0)));
     gr.forEach(row=>{row.set=put;placeRow(row,lon,{outer:2.25,inner:1.35,kid:0.45});lon+=ROW;});
     lon+=0.6;
   });
@@ -654,6 +655,7 @@ function plan(c,fams){
     const cAl=alOf(order[0]);
     const put2=(p,lat,dd,row,extra)=>{p.b=at(cAl-lat,dd,row);Object.assign(p.b,extra||{});};
     const hw=bs/2-0.4;
+    by('miss').forEach((m,i,a)=>put2(m,(i-(a.length-1)/2)*Math.min(1.0,(2*hw)/Math.max(1,a.length-1)),-0.3,'MS')); // misses always in front
     if(c.bloques){
       // block layout: pancarta and eagle in front, kids block, parents block, words and dolls at the back,
       // pompones along both sides, the dragon along the jury's left and the misses on the right edge
@@ -680,7 +682,7 @@ function plan(c,fams){
       const seq=[];WORDS.forEach((w,wi)=>{if(wi)seq.push(null);for(const ch of w)seq.push(ch);});
       const lg=Math.min(0.42,(2*inner)/(seq.length-1));let lq3=[...letters];
       seq.forEach((ch,j)=>{if(!ch)return;const p=lq3.shift();if(p)put2(p,(j-(seq.length-1)/2)*lg,d,'L1',{blk:'L',r:1});});
-      d+=0.8;
+      d+=1.0;
       const mus=by('muneco');mus.forEach((p,i)=>put2(p,(i-(mus.length-1)/2)*Math.min(1.1,(2*inner)/Math.max(1,mus.length-1)),d,'MU'));
       d+=0.9;
       const bpr=Math.max(3,Math.min(6,Math.floor(2*inner/1.1)+1));
@@ -689,7 +691,7 @@ function plan(c,fams){
       const pomp=by('pompon'),np=Math.ceil(pomp.length/2);
       pomp.forEach((p,i)=>put2(p,(i%2?1:-1)*side,0.6+(Math.floor(i/2)+0.5)*(d-1.2)/np,'S'));
       drs.forEach((p,j)=>put2(p,-edge,0.8+j*Math.min(2.4,(d-1.6)/Math.max(1,drs.length-1)),'F'));
-      const ms=by('miss');ms.forEach((m,i)=>put2(m,edge,0.6+(i+0.5)*(ps.end-0.6)/ms.length,'M'));
+      const ms=by('miss');ms.forEach((m,i)=>put2(m,(i-(ms.length-1)/2)*Math.min(1.0,(2*inner)/Math.max(1,ms.length-1)),-0.3,'MS'));
       P.filter(p=>!p.b).forEach((p,i)=>put2(p,(i-0.5)*0.7,d+0.6,'F'));
       PROMOS.forEach((pr,i)=>blocks.push({...pr,al:alOf(order[i]),rows:ks.rows+ps.rows,kr:ks.rows,pr:ps.rows,per:0,ours:i===0,width:bs,depth:d+0.8}));
     }else{
@@ -710,7 +712,6 @@ function plan(c,fams){
     const per=Math.max(2,Math.floor((bs-0.4)/1.5));
     let nRows=0;
     for(let i=0;i<us.length;i+=per,nRows++){const dd=dp0+nRows*0.75;maxDp=dd;
-      us.slice(i,i+per).forEach(u=>{by('miss').filter(m=>m.grade===u.g&&!m.b).slice(0,2).forEach((m,j)=>put2(m,(j%2?1:-1)*(bs/2+0.05),dd,'M',{blk:'col',r:nRows+1}));});
       us.slice(i,i+per).forEach((u,j,arr)=>{const cx=(j-(arr.length-1)/2)*1.5,tag={blk:'col',r:nRows+1};
         u.kids.forEach((k,m)=>put2(k,cx+(m-(u.kids.length-1)/2)*0.4,dd,'R'+(nRows+1),tag));
         const sp=u.kids.length>1?0.65:0.5;
@@ -723,6 +724,7 @@ function plan(c,fams){
     PROMOS.forEach((pr,i)=>blocks.push({...pr,al:alOf(order[i]),rows:nRows,per,ours:i===0,width:bs,depth:back+0.6}));
     }
   }else{
+  by('miss').forEach((m,i,a)=>{if(!m.b)m.b=at(mid+(i-(a.length-1)/2)*1.0,-0.3,'MS');});
   const kidList=P.filter(p=>p.kid&&!p.b).sort((a,b)=>a.lon-b.lon||a.lat-b.lat);
   const kGap=0.55;kRowsB=rowsOf(kidList.length,kGap,Math.max(4,Math.floor(Lb/kGap)+1));
   kRowsB.flat().forEach((s,i)=>{kidList[i].b=s;});
@@ -804,7 +806,7 @@ const useEmoji=()=>{const el=document.getElementById('i-emoji');return !el||el.c
 const sym=k=>(useEmoji()?ABBR_EMO:ABBR_TXT)[k];
 const withSym=(k,name)=>useEmoji()?ABBR_EMO[k]+' '+name:name;
 const gtxt=p=>p.kid?'':p.g==='papa'?' pa':' ma';
-const label=p=>p.role==='miss'?'Miss '+p.grade:p.fam+(ROLE[p.role]&&ABBR[p.role]?gtxt(p):'');
+const label=p=>p.role==='miss'?'Miss '+p.grade:p.role==='letra'?p.fam:p.fam+(ROLE[p.role]&&ABBR[p.role]?gtxt(p):'');
 const label3d=p=>p.role==='miss'?'Miss '+p.grade:p.letter?p.letter+' · '+p.fam:p.fam+gtxt(p);
 function shape(x,y,p,r){
   if(ABBR[p.role]){const w=r*3,h=r*2.1,txt=p.role==='letra'?(p.letter||'L'):sym(p.role);
@@ -814,9 +816,11 @@ function shape(x,y,p,r){
   if(p.g==='papa')return `<rect x="${(x-r*0.88).toFixed(1)}" y="${(y-r*0.88).toFixed(1)}" width="${r*1.76}" height="${r*1.76}" rx="1.5" fill="${c}"/>`;
   return `<circle cx="${X}" cy="${Y}" r="${r}" fill="${c}"/>`;
 }
-function dot(x,y,p,r,showCode){
+const planCodes=()=>!(ST.layers&&ST.layers.codes===false); // the Nombres layer also hides codes in the plans
+function dot(x,y,p,r,showCode,above){
   let s=shape(x,y,p,r);
-  if(showCode)s+=`<text class="code" x="${x.toFixed(1)}" y="${(y+(ABBR[p.role]?r*1.05:r)+7).toFixed(1)}" font-size="${r>6?9:8}" text-anchor="middle">${esc(label(p))}</text>`;
+  const off=(ABBR[p.role]?r*1.05:r);
+  if(showCode&&planCodes())s+=`<text class="code" x="${x.toFixed(1)}" y="${(above?y-off-3:y+off+7).toFixed(1)}" font-size="${r>6?9:8}" text-anchor="middle">${esc(label(p))}</text>`;
   return s;
 }
 function drawParade(pl){
@@ -864,7 +868,9 @@ function drawBarra(pl){
   if(dr.length)g+=`<polyline points="${dr.map(b=>X(b.al)+','+Y(b.dp)).join(' ')}" stroke="${ROLE.dragon.c}" stroke-width="10" stroke-linecap="round" fill="none" opacity=".4"/>`;
   const pa=pl.P.filter(p=>p.role==='pancarta').map(p=>p.b);
   if(pa.length)g+=`<line x1="${X(Math.min(...pa.map(b=>b.al)))-8}" x2="${X(Math.max(...pa.map(b=>b.al)))+8}" y1="${Y(pa[0].dp)+9}" y2="${Y(pa[0].dp)+9}" stroke="${ROLE.pancarta.c}" stroke-width="4" opacity=".6"/>`;
-  pl.P.forEach(p=>g+=dot(X(p.b.al),Y(p.b.dp),p,p.kid?5:6.5,true));
+  // letters sit close together: alternate their codes above and below so they do not pile up
+  const lett=pl.P.filter(p=>p.role==='letra').sort((a,b)=>a.b.al-b.b.al),up=new Set(lett.filter((_,i)=>i%2).map(p=>p.id));
+  pl.P.forEach(p=>g+=dot(X(p.b.al),Y(p.b.dp),p,p.kid?5:6.5,true,up.has(p.id)));
   (pl.blocks||[]).forEach(b=>{
     if(b.al<minA||b.al>maxA){const left=b.al>maxA;g+=`<text x="${left?4:w-4}" y="14" font-size="11" font-weight="600" text-anchor="${left?'start':'end'}" fill="${b.c}">${left?'← ':''}${esc(b.g)}${left?'':' →'}</text>`;return;}
     g+=`<text x="${X(b.al)}" y="14" font-size="12" font-weight="600" text-anchor="middle" fill="${b.c||'currentColor'}">${esc(b.g)}</text>`;
@@ -880,7 +886,7 @@ function renderTable(pl){
   const SHORT=Object.fromEntries(Object.entries({aguila:'Águila',coreo:'Coreografía',canto:'Canto',antorcha:'Antorcha',pancarta:'Pancarta',escudo:'Escudo',letra:'Letra',bat:'Batucada',dragon:'Dragón',muneco:'Muñeco',pompon:'Pompón',baston:'Bastón'}).map(([k,v])=>[k,k==='letra'?v:withSym(k,v)]));
   const rol=p=>p.role==='padre'||p.role==='nino'?'sin rol':p.role==='letra'?`Letra ${p.letter||''}`:SHORT[p.role];
   const ourAl=(pl.blocks[0]||{al:pl.mid}).al;
-  const bar=p=>p.b.blk==='kids'?`Niños F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.blk==='parents'?`Padres F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.row==='MU'?'Muñecos (fondo)':p.b.row==='S'?`Costado ${bs(p.b.al,ourAl)}`:p.b.row==='M'&&!p.b.r?'Borde der.':p.b.row==='M'?`F${p.b.r} ${bs(p.b.al,ourAl)} borde`:p.b.blk==='col'?`F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.blk==='L'?`L${p.b.r}`:p.b.row==='B'||p.b.row==='C'?'Bat':p.b.row==='F'?'Atr':p.b.row==='D'?'Del':p.b.blk?`${p.b.blk} F${p.b.r}`:`F${p.b.row} P${p.bpos}`;
+  const bar=p=>p.b.row==='MS'?'Delante (misses)':p.b.blk==='kids'?`Niños F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.blk==='parents'?`Padres F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.row==='MU'?'Muñecos (fondo)':p.b.row==='S'?`Costado ${bs(p.b.al,ourAl)}`:p.b.row==='M'&&!p.b.r?'Borde der.':p.b.row==='M'?`F${p.b.r} ${bs(p.b.al,ourAl)} borde`:p.b.blk==='col'?`F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.blk==='L'?`L${p.b.r}`:p.b.row==='B'||p.b.row==='C'?'Bat':p.b.row==='F'?'Atr':p.b.row==='D'?'Del':p.b.blk?`${p.b.blk} F${p.b.r}`:`F${p.b.row} P${p.bpos}`;
   const list=pl.P.filter(p=>!q||p.fam.toUpperCase().includes(q)).sort((a,b)=>a.fam.localeCompare(b.fam)||a.kid-b.kid||a.idx-b.idx);
   let last='';
   $('tbody').innerHTML=list.map(p=>{const st=p.fam!==last?' class="fam-start"':'';const code=p.role==='miss'?'Miss <span style="color:var(--muted);font-weight:400">'+esc(p.grade)+'</span>':p.fam!==last?esc(p.fam)+' <span style="color:var(--muted);font-weight:400">'+[...new Set(p.f.kid.map(k=>k.grade))].join('/')+'</span>'+(famName(p.fam)?`<span class="pn">${esc(famName(p.fam))}</span>`:''):'';last=p.fam;
@@ -951,6 +957,13 @@ $('task-copy').addEventListener('click',()=>{
 const canvas=$('c3d');
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
 renderer.setPixelRatio(Math.min(2,devicePixelRatio));
+// phones may drop GPU memory when the tab goes to the background (e.g. switching to WhatsApp):
+// keep the context restorable and re-upload every texture when the page is visible again
+canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();});
+function refreshTextures(){scene.traverse(o=>{const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[];ms.forEach(m=>{if(m.map){m.map.needsUpdate=true;}m.needsUpdate=true;});});}
+canvas.addEventListener('webglcontextrestored',()=>{refreshTextures();if(PL)rebuild();});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshTextures();});
+addEventListener('pageshow',()=>refreshTextures());
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(42,1,0.1,800);
@@ -1300,7 +1313,7 @@ function applyLayers(){
   scene.traverse(o=>{if(o.isSprite)o.visible=LAYERS.codes;if(o.userData.prop)o.visible=LAYERS.props;if(o.userData.roof)o.visible=LAYERS.roofs;});
   [['codes','ly-codes'],['props','ly-props'],['roofs','ly-roofs']].forEach(([k,id])=>$(id).setAttribute('aria-pressed',String(LAYERS[k])));
 }
-[['codes','ly-codes'],['props','ly-props'],['roofs','ly-roofs']].forEach(([k,id])=>$(id).addEventListener('click',()=>{LAYERS[k]=!LAYERS[k];ST.layers=LAYERS;saveState();applyLayers();}));
+[['codes','ly-codes'],['props','ly-props'],['roofs','ly-roofs']].forEach(([k,id])=>$(id).addEventListener('click',()=>{LAYERS[k]=!LAYERS[k];ST.layers=LAYERS;saveState();applyLayers();if(k==='codes'&&PL){drawParade(PL);drawBarra(PL);}}));
 $('f-filter').addEventListener('input',()=>renderTable(PL));
 function overMsg(){const n=Object.keys(ST.over).length;$('over-msg').textContent=n?`${n} asignación${n>1?'es':''} manual${n>1?'es':''}`:'';}
 $('tbody').addEventListener('change',e=>{const s=e.target.closest('select[data-k]');if(!s)return;
