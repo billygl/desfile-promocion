@@ -68,6 +68,17 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 td select{font:inherit;font-size:.82rem;padding:3px 4px;border:1px solid var(--line);border-radius:5px;background:var(--surface);color:var(--fg);max-width:190px;width:100%}
 td select.manual{border-color:var(--accent);font-weight:700}
 [hidden]{display:none!important}
+.alist{display:flex;flex-direction:column;gap:4px}
+.alist h4{margin:10px 0 2px;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.arow{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--line)}
+.arow .acode{font-family:var(--f-mono);font-weight:700;min-width:64px;text-align:left;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.arow .acode small{font-weight:400;color:var(--muted)}
+.ap{font-size:1.05rem;padding:3px 7px;border-radius:8px;border:2px dashed var(--line);background:transparent;line-height:1.2}
+.ap small{font-size:.65rem;font-family:var(--f-mono)}
+.ap.si{border:2px solid #2aa84a;background:color-mix(in srgb,#2aa84a 22%,transparent)}
+.ap.no{border:2px solid #c4232b;background:color-mix(in srgb,#c4232b 14%,transparent);opacity:.55;text-decoration:line-through}
+.arow.out{opacity:.5}
+.arow .anote{font-size:.75rem;color:var(--muted);margin-left:auto}
 .tasks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
 .task{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:start;background:var(--surface)}
 .task>input[type=checkbox]{width:20px;height:20px;margin-top:2px;accent-color:var(--accent)}
@@ -163,7 +174,8 @@ tr.fam-start td{border-top:2px solid var(--line)}
 <nav class="jump" aria-label="Secciones"><div class="in">
   <a href="#s-resumen">Resumen</a><a href="#s-visor">Visor 3D</a><a href="#s-desfile">Plano desfile</a><a href="#s-barra">Plano barra</a><a href="#s-tabla">Por familia</a><a href="#s-tareas">Tareas</a><a href="#s-criterios">Criterios</a>
   <select id="jump-sel" aria-label="Ir a la sección"><option value="">Ir a…</option><option value="#s-resumen">Resumen</option><option value="#s-visor">Visor 3D</option><option value="#s-desfile">Plano desfile</option><option value="#s-barra">Plano barra</option><option value="#s-tabla">Por familia</option><option value="#s-tareas">Tareas</option><option value="#s-criterios">Criterios</option></select>
-  <button class="help" id="open-config" title="Tecla C" style="margin-left:auto"><span class="l">Configuración</span><span class="s">Config.</span></button>
+  <button class="help" id="open-att" title="Tecla A" style="margin-left:auto"><span class="l">Asistencia</span><span class="s">Asist.</span></button>
+  <button class="help" id="open-config" title="Tecla C"><span class="l">Configuración</span><span class="s">Config.</span></button>
   <button class="help" data-help="general" title="Tecla L"><span class="l">Leyenda</span><span class="s">?</span></button>
 </div></nav>
 <div class="wrap">
@@ -258,10 +270,19 @@ tr.fam-start td{border-top:2px solid var(--line)}
     </details>
 </div>
 
+<aside id="att-panel" class="drawer" aria-label="Asistencia" hidden>
+  <div class="ph"><h2>Asistencia</h2><button class="btn" id="att-close">Cerrar</button></div>
+  <div class="key" id="att-sum"></div>
+  <label class="chk" for="att-pend" style="display:flex;gap:8px;align-items:center;font-size:.88rem"><input type="checkbox" id="att-pend" checked> Contar a los pendientes como que vienen</label>
+  <p class="note" style="margin:0">Toca a cada persona para cambiar: <b>pendiente → viene → no viene</b>. Toca el código para marcar a toda la familia. El desfile y la barra se recalculan solos.</p>
+  <input id="att-q" type="search" placeholder="Buscar código…" aria-label="Buscar código" style="font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)">
+  <div id="att-list" class="alist"></div>
+  <div class="row"><button class="btn" id="att-copy">Copiar resumen</button><button class="btn" id="att-csv">Descargar CSV</button><button class="btn" id="att-reset">Reiniciar</button></div>
+  <span class="note" id="att-msg"></span>
+</aside>
 <aside id="config-panel" class="drawer" aria-label="Configuración" hidden>
   <div class="ph"><h2>Configuración</h2><button class="btn" id="config-close">Cerrar</button></div>
   <section class="controls" aria-label="Supuestos">
-    <label for="i-pct">Asistencia estimada %<input id="i-pct" type="number" min="30" max="100" value="80"></label>
     <label for="i-bat">Batucada (personas)<input id="i-bat" type="number" min="0" max="12" value="6"></label>
     <label for="i-len">Largo línea de barra (m)<input id="i-len" type="number" min="8" max="40" step="0.5" value="24"></label>
     <label for="i-mode">Barra<select id="i-mode"><option value="columna">Columna junto a Prekinder y Nursery</option><option value="filas">Filas horizontales (toda la línea)</option></select></label>
@@ -269,7 +290,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
     <label for="i-face">Frente de la barra<select id="i-face"><option value="jurado">Hacia el jurado (escenario)</option><option value="sur">De espaldas al escenario</option></select></label>
   </section>
   <div class="lg"><h3>Familias</h3>
-    <p class="note" style="margin:0">Una familia por línea: código de 2 o 3 letras, cantidad de hijos (si no es 1), grado de cada hijo (K1, K2, K3) y roles opcionales. <span class="mono">-</span> al inicio = no asiste; mientras nadie esté marcado se usa la asistencia estimada. Roles (los llevan papás y mamás): <span class="mono">aguila direccion pancarta escudo antorcha letra bat dragon muneco pompon baston</span>; con <span class="mono">papa:</span> o <span class="mono">mama:</span> delante se elige quién. <span class="mono">sin-papa</span> / <span class="mono">sin-mama</span> = asiste uno solo.</p>
+    <p class="note" style="margin:0">Una familia por línea: código de 2 o 3 letras, cantidad de hijos (si no es 1), grado de cada hijo (K1, K2, K3) y roles opcionales. <span class="mono">-</span> al inicio = no asiste; quién viene se marca en el panel Asistencia. Roles (los llevan papás y mamás): <span class="mono">aguila direccion pancarta escudo antorcha letra bat dragon muneco pompon baston</span>; con <span class="mono">papa:</span> o <span class="mono">mama:</span> delante se elige quién. <span class="mono">sin-papa</span> / <span class="mono">sin-mama</span> = asiste uno solo.</p>
     <textarea id="fam-list" spellcheck="false" aria-label="Lista de familias" style="min-height:260px"></textarea>
     <div class="row"><button class="btn" id="fam-apply">Aplicar lista</button><button class="btn" id="fam-reset">Volver a la lista del directorio</button></div>
     <span class="note" id="fam-msg"></span>
@@ -436,7 +457,7 @@ const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},se
 
 function cfg(){
   const n=(id,d)=>{const v=parseFloat($(id).value);return isFinite(v)?v:d};
-  return {pct:Math.min(100,Math.max(30,n('i-pct',80))),bat:Math.max(0,Math.round(n('i-bat',6))),mode:$('i-mode').value,slot:$('i-slot').value,len:n('i-len',14),face:$('i-face').value};
+  return {bat:Math.max(0,Math.round(n('i-bat',6))),mode:$('i-mode').value,slot:$('i-slot').value,len:n('i-len',14),face:$('i-face').value};
 }
 
 /* ---------- path ---------- */
@@ -463,19 +484,16 @@ function pathDir(s){
 function pickEven(arr,n){const out=[];for(let k=0;k<n&&arr.length;k++)out.push(arr[Math.min(arr.length-1,Math.floor((k+0.5)*arr.length/n))]);return [...new Set(out)];}
 
 function plan(c,fams){
-  fams.forEach(f=>f.est=false);
-  if(!fams.some(f=>f.marked)&&c.pct<100){
-    const n=Math.round(fams.length*(1-c.pct/100));
-    const manual=new Set(Object.keys(ST.over).map(k=>k.split(':')[0]));
-    const cand=fams.filter(f=>!f.roles.length&&!f.kidRoles.length&&f.kids===1&&!manual.has(f.code));
-    pickEven(cand,n).forEach(f=>f.est=true);
-  }
-  const att=fams.filter(f=>!f.absent&&!f.est);
+  // attendance taken person by person; pending people count as coming unless the viewer says otherwise
+  const ATT=ST.att||{},pendOK=ST.attPending!==false;
+  const comes=(code,k)=>{const v=(ATT[code]||{})[k];return v==='si'||(!v&&pendOK);};
+  fams.forEach(f=>{f.est=false;f.gNow=f.genders.filter(g=>comes(f.code,g));f.kNow=[...Array(f.kids).keys()].filter(i=>comes(f.code,'h'+(i+1)));});
+  const att=fams.filter(f=>!f.absent&&(f.gNow.length||f.kNow.length));
   const P=[];
   const add=(role,f,kid,idx)=>{const p={role,kid,fam:f.code,f,idx,id:P.length};P.push(p);return p};
   att.forEach(f=>{f.par=[];f.kid=[];
-    f.genders.forEach((g,i)=>{const p=add('padre',f,false,i+1);p.g=g;f.par.push(p);});
-    for(let i=0;i<f.kids;i++){const k=add('nino',f,true,i+1);k.grade=f.grades[i]||f.grades[0]||'Promo';f.kid.push(k);}});
+    f.gNow.forEach(g=>{const p=add('padre',f,false,f.genders.indexOf(g)+1);p.g=g;f.par.push(p);});
+    f.kNow.forEach(i=>{const k=add('nino',f,true,i+1);k.grade=f.grades[i]||f.grades[0]||'Promo';f.kid.push(k);});});
   // 6 misses (teachers), 2 per grade; they walk and stand with their grade
   const gradesAll=[...new Set(P.filter(p=>p.kid).map(p=>p.grade))].sort();
   const missF={code:'Miss',kids:0,kid:[],par:[],genders:[]};
@@ -682,7 +700,7 @@ function renderInfo(pl){
   const gradeTile=pl.mode==='columna'?stat('1 × '+pl.blocks[0].rows+' filas',`barra: columna de ${(pl.Lb/3).toFixed(1)} m × ${pl.blocks[0].depth.toFixed(0)} m de fondo`):stat(nRowsB+' filas','barra, + escudo y pancarta delante');
   const pct=Math.round(100*pl.att.length/pl.fams.length),est=pl.fams.some(f=>f.est);
   $('stats').innerHTML=
-    stat(pl.P.length,'personas (con las 6 misses)')+stat(pl.att.length+' / '+pl.fams.length,'familias asisten ('+pct+'%'+(est?', estimado':'')+')')+stat(pl.kids,'niños')+stat(pl.parents-6,'padres y madres')+
+    stat(pl.P.length,'personas (con las 6 misses)')+stat(pl.att.length+' / '+pl.fams.length,'familias vienen'+(ST.attPending!==false&&attCounts().pend?' (con pendientes)':''))+stat(pl.kids,'niños')+stat(pl.parents-6,'padres y madres')+
     stat('6 × '+pl.rows,'columnas × filas de familias')+stat(pl.maxLon.toFixed(0)+' m','largo de la columna')+
     (ROUTE?stat(fmtT((PATH.L+pl.maxLon)/V),'min:seg de recorrido a 1 m/s'):stat('—','dibuja el recorrido en el visor'))+gradeTile;
   const sh=(svg)=>`<svg width="12" height="12" viewBox="0 0 12 12" style="vertical-align:-1px;margin-right:5px">${svg}</svg>`;
@@ -799,7 +817,7 @@ function renderTable(pl){
     const k=pkey(p),cur=ST.over[k]||'',opts=['aguila','direccion','pancarta','escudo','antorcha','letra','bat','dragon','muneco','pompon','baston'];
     const sel=p.kid?'<span style="color:var(--muted)">no lleva nada</span>':`<select class="${cur?'manual':''}" data-k="${esc(k)}" aria-label="Rol de ${esc(p.fam)} ${esc(who(p))}"><option value=""${cur?'':' selected'}>${cur?'Automático':esc(rol(p))+' · auto'}</option><option value="libre"${cur==='libre'?' selected':''}>Sin rol</option>${opts.map(o=>`<option value="${o}"${cur===o?' selected':''}>${SHORT[o]}</option>`).join('')}</select>`;
     return `<tr${st}><td class="code">${code}</td><td class="who">${emo(p)}</td><td>${sel}</td><td class="pos">F${p.prow} ${side(p)}</td><td class="pos">${bar(p)}</td></tr>`;}).join('')
-    +pl.fams.filter(f=>(f.absent||f.est)&&(!q||f.code.toUpperCase().includes(q))).map(f=>`<tr class="fam-start"><td class="code">${esc(f.code)}</td><td colspan="4">${f.est?'No asiste (estimado)':'No asiste'}</td></tr>`).join('');
+    +pl.fams.filter(f=>!pl.att.includes(f)&&(!q||f.code.toUpperCase().includes(q))).map(f=>`<tr class="fam-start"><td class="code">${esc(f.code)}</td><td colspan="4">No viene</td></tr>`).join('');
 }
 
 /* ---------- tasks: one list for roles and logistics ---------- */
@@ -1203,7 +1221,7 @@ $('st-2').addEventListener('click',()=>playStage(2));
 function setPlaying(v){playing=v;$('play').setAttribute('aria-pressed',String(v));$('play').textContent=v?'❚❚ Pausa':'▶ Transición';}
 $('play').addEventListener('click',()=>{if(!playing&&(T>=PL.tEnd-0.05||T<PL.tInit))T=PL.tInit;stageEnd=PL.tEnd;if(view==='follow')setView('3d');setPlaying(!playing);});
 $('time').addEventListener('input',e=>{T=parseFloat(e.target.value);setPlaying(false);update(T);});
-['i-pct','i-bat','i-len','i-face','i-mode','i-slot'].forEach(id=>$(id).addEventListener('change',rebuild));
+['i-bat','i-len','i-face','i-mode','i-slot'].forEach(id=>$(id).addEventListener('change',rebuild));
 // layers: names, carried items and roofs can be hidden to see the formation clearly
 const LAYERS=Object.assign({codes:true,props:true,roofs:true},ST.layers||{});
 function applyLayers(){
@@ -1217,7 +1235,7 @@ $('tbody').addEventListener('change',e=>{const s=e.target.closest('select[data-k
   if(s.value)ST.over[s.dataset.k]=s.value;else delete ST.over[s.dataset.k];saveState();overMsg();rebuild();});
 $('over-clear').addEventListener('click',()=>{ST.over={};saveState();overMsg();rebuild();});
 // remember every control
-const INPUTS=['i-pct','i-bat','i-len','i-face','i-mode','i-slot','speed'];
+const INPUTS=['i-bat','i-len','i-face','i-mode','i-slot','speed'];
 INPUTS.forEach(id=>{const el=$(id),v=ST.inputs[id];if(v!==undefined){if(el.type==='checkbox')el.checked=v;else el.value=v;}
   el.addEventListener('change',()=>{ST.inputs[id]=el.type==='checkbox'?el.checked:el.value;saveState();});});
 
@@ -1277,8 +1295,53 @@ const HELP_CTX={
 };
 const panel=$('legend-panel');
 const cpanel=$('config-panel');
-function openHelp(ctx){cpanel.hidden=true;$('help-ctx').textContent=HELP_CTX[ctx]||'';panel.hidden=false;$('legend-close').focus();}
-function toggleConfig(){if(cpanel.hidden){panel.hidden=true;cpanel.hidden=false;$('config-close').focus();}else cpanel.hidden=true;}
+function openHelp(ctx){cpanel.hidden=true;if(typeof apanel!=='undefined')apanel.hidden=true;$('help-ctx').textContent=HELP_CTX[ctx]||'';panel.hidden=false;$('legend-close').focus();}
+const apanel=$('att-panel');
+ST.att=ST.att||{};
+const AKEYS=f=>[...f.genders,...[...Array(f.kids).keys()].map(i=>'h'+(i+1))];
+const AEMO=(f,k)=>k==='papa'?'👨':k==='mama'?'👩':'🧒'+(f.kids>1?`<small>${k.slice(1)}</small>`:'');
+function attCounts(){let si=0,no=0,pend=0;(FAMS||[]).filter(f=>!f.absent).forEach(f=>AKEYS(f).forEach(k=>{const v=(ST.att[f.code]||{})[k];v==='si'?si++:v==='no'?no++:pend++;}));return {si,no,pend};}
+function renderAtt(){
+  const q=$('att-q').value.trim().toUpperCase(),c=attCounts();
+  $('att-sum').innerHTML=`<span><b>${c.si}</b> vienen</span><span><b>${c.no}</b> no vienen</span><span><b>${c.pend}</b> pendientes</span>`;
+  $('att-pend').checked=ST.attPending!==false;
+  const groups={};
+  FAMS.forEach(f=>{if(q&&!f.code.toUpperCase().includes(q))return;(groups[f.grades[0]||'Sin grado']=groups[f.grades[0]||'Sin grado']||[]).push(f);});
+  $('att-list').innerHTML=Object.keys(groups).sort().map(g=>`<h4>${esc(g)}</h4>`+groups[g].map(f=>{
+    if(f.absent)return `<div class="arow out"><span class="acode">${esc(f.code)}</span><span class="anote">No asiste (marcado en la lista)</span></div>`;
+    const a=ST.att[f.code]||{};
+    return `<div class="arow"><button class="acode" data-fam="${esc(f.code)}" title="Marcar a toda la familia">${esc(f.code)} <small>${esc(f.grades.join('/'))}</small></button>`+
+      AKEYS(f).map(k=>{const v=a[k]||'pend';return `<button class="ap ${v}" data-fam="${esc(f.code)}" data-k="${k}" aria-label="${esc(f.code)} ${k}: ${v==='si'?'viene':v==='no'?'no viene':'pendiente'}">${AEMO(f,k)}</button>`;}).join('')+`</div>`;}).join('')).join('');
+}
+let attTimer;
+function attChanged(){saveState();renderAtt();clearTimeout(attTimer);attTimer=setTimeout(rebuild,400);}
+$('att-list').addEventListener('click',e=>{const b=e.target.closest('button[data-fam]');if(!b)return;
+  const f=FAMS.find(x=>x.code===b.dataset.fam);if(!f)return;const a=ST.att[f.code]=ST.att[f.code]||{};
+  if(b.dataset.k){const v=a[b.dataset.k];a[b.dataset.k]=!v?'si':v==='si'?'no':undefined;if(!a[b.dataset.k])delete a[b.dataset.k];}
+  else{const all=AKEYS(f).every(k=>a[k]==='si');AKEYS(f).forEach(k=>{a[k]=all?'no':'si';});}
+  attChanged();});
+$('att-q').addEventListener('input',renderAtt);
+$('att-pend').addEventListener('change',e=>{ST.attPending=e.target.checked;attChanged();});
+$('att-reset').addEventListener('click',()=>{ST.att={};attChanged();$('att-msg').textContent='Asistencia reiniciada: todos pendientes.';});
+function attRows(){return FAMS.map(f=>{const a=ST.att[f.code]||{};const st=k=>f.absent?'no':a[k]==='si'?'viene':a[k]==='no'?'no viene':'pendiente';
+  return {f,papa:f.genders.includes('papa')?st('papa'):'—',mama:f.genders.includes('mama')?st('mama'):'—',kids:[...Array(f.kids).keys()].map(i=>st('h'+(i+1)))};});}
+$('att-csv').addEventListener('click',()=>{
+  const rows=[['codigo','grado','papa','mama','hijo1','hijo2']].concat(attRows().map(r=>[r.f.code,r.f.grades.join('/'),r.papa,r.mama,r.kids[0]||'',r.kids[1]||'']));
+  const csv=rows.map(r=>r.map(x=>/[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x).join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='asistencia-desfile.csv';document.body.appendChild(a);a.click();a.remove();
+  $('att-msg').textContent='CSV descargado (se abre en Excel o Google Sheets).';});
+$('att-copy').addEventListener('click',()=>{
+  const c=attCounts(),rows=attRows(),grp={};
+  rows.forEach(r=>{const g=r.f.grades[0]||'Sin grado';(grp[g]=grp[g]||[]).push(r);});
+  const mark=r=>[r.papa==='viene'?'👨':'',r.mama==='viene'?'👩':'',...r.kids.map(k=>k==='viene'?'🧒':'')].join('');
+  let text=`Asistencia desfile: ${c.si} vienen · ${c.no} no vienen · ${c.pend} pendientes\n`;
+  Object.keys(grp).sort().forEach(g=>{text+=`\n${g}\n`+grp[g].map(r=>`${r.f.code} ${mark(r)||(r.f.absent?'no viene':'—')}${[r.papa,r.mama,...r.kids].includes('pendiente')?' (pendiente)':''}`).join('\n')+'\n';});
+  try{navigator.clipboard.writeText(text).then(()=>{$('att-msg').textContent='Resumen copiado. Pégalo en WhatsApp.';},()=>{$('att-msg').textContent='Tu navegador no dejó copiar.';});}catch(err){$('att-msg').textContent='Tu navegador no dejó copiar.';}
+});
+function toggleAtt(){if(apanel.hidden){panel.hidden=true;cpanel.hidden=true;renderAtt();apanel.hidden=false;$('att-close').focus();}else apanel.hidden=true;}
+$('open-att').addEventListener('click',toggleAtt);
+$('att-close').addEventListener('click',()=>{apanel.hidden=true;});
+function toggleConfig(){apanel.hidden=true;if(cpanel.hidden){panel.hidden=true;cpanel.hidden=false;$('config-close').focus();}else cpanel.hidden=true;}
 $('open-config').addEventListener('click',toggleConfig);
 $('open-config2').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();toggleConfig();});
 $('config-close').addEventListener('click',()=>{cpanel.hidden=true;});
@@ -1286,7 +1349,8 @@ function showViewer(){const d=$('s-visor');d.open=true;d.scrollIntoView({block:'
 document.addEventListener('click',e=>{const b=e.target.closest('[data-help]');if(!b)return;e.preventDefault();e.stopPropagation();openHelp(b.dataset.help);},true);
 $('legend-close').addEventListener('click',()=>{panel.hidden=true;});
 addEventListener('keydown',e=>{
-  if(e.key==='Escape'&&!drawMode&&(!panel.hidden||!cpanel.hidden)){panel.hidden=true;cpanel.hidden=true;return;}
+  if(e.key==='Escape'&&!drawMode&&(!panel.hidden||!cpanel.hidden||!apanel.hidden)){panel.hidden=true;cpanel.hidden=true;apanel.hidden=true;return;}
+  if((e.key==='a'||e.key==='A')&&!e.ctrlKey&&!e.metaKey&&!/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||'')){toggleAtt();return;}
   if((e.key==='c'||e.key==='C')&&!e.ctrlKey&&!e.metaKey&&!/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||'')){toggleConfig();return;}
   if((e.key==='l'||e.key==='L')&&!e.ctrlKey&&!e.metaKey&&!/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||'')){if(panel.hidden)openHelp('general');else panel.hidden=true;}
 });
