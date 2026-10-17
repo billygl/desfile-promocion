@@ -178,6 +178,26 @@ li{max-width:72ch}
 .simple .em{font-size:1.25rem;line-height:1}
 .simple-jury{text-align:center;font-size:.78rem;color:var(--muted);margin-top:4px}
 @media (max-width:560px){.simple{grid-template-columns:minmax(0,1fr)}.simple .side,.simple .side.r{grid-row:auto;grid-column:1;flex-direction:row;flex-wrap:wrap;justify-content:center}.simple .mid{grid-row:auto}.simple .mid,.simple .front{grid-column:1}.simple .side.l{order:-1}}
+.ro #s-material,.ro .admin-link{display:none}
+.mats{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.mat{border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.mat h3{margin:0;font-size:.95rem;display:flex;gap:6px;align-items:center}
+.mat h3 .n{margin-left:auto;font-family:var(--f-mono);font-size:.78rem;color:var(--muted)}
+.mat h3 .n.bad{color:#c4232b}
+.mat .who{display:flex;flex-wrap:wrap;gap:4px}
+.mat .pc{display:inline-flex;align-items:center;gap:4px;font-family:var(--f-mono);font-size:.75rem;padding:2px 2px 2px 6px;border-radius:6px;border:1px solid var(--line);background:var(--bg)}
+.mat .pc.fix{border-color:var(--fg);font-weight:700}
+.mat .pc small{font-family:var(--f-body);font-weight:400;color:var(--muted)}
+.mat .pc button{padding:0 6px;font-size:.8rem;line-height:1.4}
+.mat select{font:inherit;font-size:.8rem;padding:4px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg);max-width:100%}
+/* families (read only): tasks show only what is filled in, as plain text */
+.ro #tasks input[data-f]:placeholder-shown{display:none}
+.ro #tasks .fields input{border:0;background:transparent;padding:0;color:var(--fg)}
+.ro #tasks .fields{gap:2px 10px}
+@media (max-width:560px){.wrap{gap:12px}.card{padding:12px;gap:8px}}
+.attf{display:flex;gap:2px;border:1px solid var(--line);border-radius:8px;padding:2px;flex-wrap:wrap}
+.attf button{flex:1;font-size:.8rem;padding:5px 6px}
+.attf button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
 .note{font-size:.85rem;color:var(--muted);border-left:3px solid var(--accent);padding-left:10px}
 textarea{width:100%;min-height:180px;font-family:var(--f-mono);font-size:.85rem;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);resize:vertical}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -207,7 +227,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
 </head>
 <body>
 <nav class="jump" aria-label="Secciones"><div class="in">
-  <a href="#s-resumen">Resumen</a><a href="#s-visor">Visor 3D</a><a href="#s-simple">Plano simple</a><a href="#s-desfile">Plano desfile</a><a href="#s-barra">Plano barra</a><a href="#s-tabla">Por familia</a><a href="#s-tareas">Tareas</a><a href="#s-criterios">Criterios</a>
+  <a href="#s-resumen">Resumen</a><a href="#s-visor">Visor 3D</a><a href="#s-simple">Plano simple</a><a href="#s-material" class="admin-link">Por material</a><a href="#s-desfile">Plano desfile</a><a href="#s-barra">Plano barra</a><a href="#s-tabla">Por familia</a><a href="#s-tareas">Tareas</a><a href="#s-criterios">Criterios</a>
   <select id="jump-sel" aria-label="Ir a la sección"><option value="">Ir a…</option><option value="#s-resumen">Resumen</option><option value="#s-visor">Visor 3D</option><option value="#s-simple">Plano simple</option><option value="#s-desfile">Plano desfile</option><option value="#s-barra">Plano barra</option><option value="#s-tabla">Por familia</option><option value="#s-tareas">Tareas</option><option value="#s-criterios">Criterios</option></select>
   <button class="help" id="open-att" title="Tecla A" style="margin-left:auto"><span class="l">Asistencia</span><span class="s">Asist.</span></button>
   <button class="help" id="open-config" title="Tecla C"><span class="l">Configuración</span><span class="s">Config.</span></button>
@@ -269,6 +289,12 @@ tr.fam-start td{border-top:2px solid var(--line)}
     <div class="simple-jury">▼ jurado / escenario ▼</div>
   </details>
 
+  <details class="card" id="s-material" open>
+    <summary><h2>Asignar por material</h2><span class="hint" id="mat-hint"></span></summary>
+    <p>Solo para el administrador. Cada material con quién lo lleva. <b>Negrita</b> = asignado a mano; el resto lo reparte la página. ✕ quita a esa persona (no le vuelve a tocar nada solo); «Agregar» lo asigna a mano. Se guarda en la hoja y todos lo ven.</p>
+    <div class="mats" id="mats"></div>
+  </details>
+
   <details class="card" id="s-desfile" open>
     <summary><h2>Plano del desfile</h2><button class="help" data-help="desfile">Leyenda</button></summary>
     <p id="parade-sum"></p>
@@ -322,6 +348,7 @@ tr.fam-start td{border-top:2px solid var(--line)}
   <div class="key" id="att-sum"></div>
   <label class="chk" for="att-pend" style="display:flex;gap:8px;align-items:center;font-size:.88rem"><input type="checkbox" id="att-pend" checked> Contar a los pendientes como que vienen</label>
   <p class="note" style="margin:0">Toca a cada persona para cambiar: <b>pendiente → viene → no viene</b>. Toca el código para marcar a toda la familia. El desfile y la barra se recalculan solos.</p>
+  <div class="attf" role="group" aria-label="Mostrar"><button data-af="all" aria-pressed="true">Todos</button><button data-af="pend" aria-pressed="false">Solo pendientes</button><button data-af="vienen" aria-pressed="false">Ocultar los que no vienen</button></div>
   <input id="att-q" type="search" placeholder="Buscar código…" aria-label="Buscar código" style="font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--fg)">
   <div id="att-list" class="alist"></div>
   <div class="row"><button class="btn" id="att-copy">Copiar resumen</button><button class="btn" id="att-csv">Descargar CSV</button><button class="btn" id="att-reset">Reiniciar</button></div>
@@ -847,7 +874,7 @@ function renderInfo(pl){
   else if(pl.mode==='columna')$('barra-sum').innerHTML=`La línea de <b>${pl.Lb.toFixed(1)} m</b> la comparten las 3 promociones: <b>Kinder (nosotros, verde)</b>, Prekinder (rosado) y Nursery (azul), cada una en una columna de ${(pl.Lb/3).toFixed(1)} m mirando al jurado. Nuestra columna: escudo, pancarta, Águila y antorcha delante; los 2 que dirigen en las esquinas; LOVE HONOR SERVICE al frente; luego <b>${pl.blocks[0].rows} filas de ${pl.blocks[0].per} familias</b> (${pl.GRADES.join(', ')}), cada hijo entre su papá y su mamá; atrás la batucada y el dragón alzado. Prekinder y Nursery (con sus 4 misses cada una) se dibujan solo como referencia: desfilan después de nosotros, así que en el 3D aparecen recién cuando nuestra barra está formada. Nuestras 6 misses, 2 por sección, van en los bordes de las filas de su sección.`;
   else if(pl.mode==='grados')$('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela al escenario (Jr. Gregorio Paredes) y mirando al jurado. Delante: escudo, pancarta, Águila, antorcha y los 2 que dirigen. Fila 1: <b>LOVE HONOR SERVICE</b>. Detrás, <b>una columna por grado</b> (${pl.blocks.map(b=>b.g+': '+b.rows+' filas').join(', ')}), lado a lado, de ${(pl.Lb/pl.blocks.length).toFixed(1)} m de ancho cada una: el hijo al centro y sus padres a los costados, como en el desfile. El dragón se alza detrás de todos y la batucada va al costado.`;
   else $('barra-sum').innerHTML=`Línea de <b>${pl.Lb.toFixed(1)} m</b>, paralela al escenario (Jr. Gregorio Paredes) y mirando al jurado. Delante: escudo, pancarta, Águila y antorcha. Fila 1: <b>LOVE HONOR SERVICE</b>. Luego ${kr.length} filas de niños (${kr.join(' + ')}) y ${pr.length} de padres (${pr.join(' + ')}), en tresbolillo para que todos vean. Batucada al costado este.`;
-  drawParade(pl);drawBarra(pl);drawSimple(pl);renderTable(pl);renderTasks(pl);
+  drawParade(pl);drawBarra(pl);drawSimple(pl);drawMaterial(pl);renderTable(pl);renderTasks(pl);
 }
 const ABBR_EMO={miss:'👩‍🏫',aguila:'🦅',coreo:'💃',canto:'🎤',antorcha:'🔥',pancarta:'🪧',escudo:'🛡️',letra:'L',bat:'🥁',dragon:'🐉',muneco:'🪆',pompon:'🎊',baston:'🎈'};
 const ABBR_TXT={miss:'MS',aguila:'ÁG',coreo:'CO',canto:'CA',antorcha:'AN',pancarta:'PA',escudo:'ES',letra:'L',bat:'BT',dragon:'DR',muneco:'MU',pompon:'PO',baston:'BA'};
@@ -898,6 +925,22 @@ function drawParade(pl){
   }
   const s=$('svg-parade');s.setAttribute('viewBox',`0 0 ${W0} ${h}`);s.style.color='var(--fg)';s.innerHTML=g;
 }
+// admin view: one card per material with who carries it; writes the same manual assignments (ST.over) as the table
+const MATS=['aguila','antorcha','escudo','pancarta','letra','muneco','dragon','pompon','baston','bat','coreo','canto'];
+function drawMaterial(pl){
+  const need={coreo:1,canto:1,aguila:1,pancarta:3,bat:+$('i-bat').value,dragon:3,muneco:6,pompon:6,antorcha:1,baston:8,escudo:1,letra:WORDS.join('').length};
+  const adults=pl.P.filter(p=>!p.kid&&p.role!=='miss').sort((a,b)=>a.fam.localeCompare(b.fam)||a.g.localeCompare(b.g));
+  const tag=p=>{const n=personName(p);return `${esc(p.fam)} ${p.g==='papa'?'pa':'ma'}${n?` <small>${esc(n)}</small>`:''}`;};
+  const opt=p=>{const n=personName(p);return `${p.fam} ${p.g==='papa'?'papá':'mamá'}${n?' · '+n:''}${p.role!=='padre'?' ('+(ROLE[p.role]?ROLE[p.role].n:p.role)+')':''}`;};
+  let short=0;
+  $('mats').innerHTML=MATS.map(r=>{const ps=pl.P.filter(p=>p.role===r),n=need[r]||0;if(ps.length<n)short++;
+    return `<div class="mat"><h3>${useEmoji()?ABBR_EMO[r]:''} ${esc(ROLE[r].n)}<span class="n${ps.length<n?' bad':''}">${ps.length} / ${n}</span></h3>
+      <div class="who">${ps.map(p=>`<span class="pc${ST.over[pkey(p)]===r?' fix':''}">${r==='letra'&&p.letter?`<b>${esc(p.letter)}</b> `:''}${tag(p)}<button data-out="${esc(pkey(p))}" aria-label="Quitar">✕</button></span>`).join('')||'<span class="note">nadie</span>'}</div>
+      <select data-mat="${r}" aria-label="Agregar a ${esc(ROLE[r].n)}"><option value="">Agregar…</option>${adults.filter(p=>p.role!==r).map(p=>`<option value="${esc(pkey(p))}">${esc(opt(p))}</option>`).join('')}</select></div>`;}).join('');
+  $('mat-hint').textContent=short?`${short} material${short>1?'es':''} incompleto${short>1?'s':''}`:'todo asignado';
+}
+$('mats').addEventListener('click',e=>{const b=e.target.closest('[data-out]');if(!b||!ADMIN)return;ST.over[b.dataset.out]='libre';saveState();overMsg();rebuild();});
+$('mats').addEventListener('change',e=>{const s=e.target.closest('[data-mat]');if(!s||!s.value||!ADMIN)return;ST.over[s.value]=s.dataset.mat;saveState();overMsg();rebuild();});
 // simplified barra seen from the jury, like a drawing: who is where, by family code
 function drawSimple(pl){
   const of=r=>pl.P.filter(p=>p.role===r),sym=k=>useEmoji()?ABBR_EMO[k]:ABBR_TXT[k];
@@ -906,14 +949,19 @@ function drawSimple(pl){
   const words=WORDS.map(w=>{const ps=of('letra').filter(p=>p.word===w);
     return `<div class="word"><b>${w}</b><div class="chips">${ps.map(p=>`<span class="lt"><i>${esc(p.letter)}</i>${esc(p.fam)}</span>`).join('')||'<span class="sc">sin asignar</span>'}</div></div>`;}).join('');
   const kids=pl.P.filter(p=>p.kid),pars=of('padre');
+  // one chip per family: "AO pa·ma"; kids: "AnB ×2"
+  const famChips=ps=>{const m=new Map();ps.forEach(p=>{if(!m.has(p.fam))m.set(p.fam,[]);m.get(p.fam).push(p);});
+    return [...m].map(([f,a])=>{const n=a.map(personName).filter(Boolean).join(', ');return `<span class="sc">${esc(f)}<small>${a.map(p=>p.g==='papa'?'pa':'ma').join('·')}</small>${n?`<small>${esc(n)}</small>`:''}</span>`;}).join('');};
+  const kidChips=ps=>{const m=new Map();ps.forEach(p=>{if(!m.has(p.fam))m.set(p.fam,[]);m.get(p.fam).push(p);});
+    return [...m].map(([f,a])=>{const n=a.map(personName).filter(Boolean).join(', ');return `<span class="sc">${esc(f)}${a.length>1?`<small>×${a.length}</small>`:''}${n?`<small>${esc(n)}</small>`:''}</span>`;}).join('');};
   // same layout as the barra plan: left/right as the jury sees it (higher "al" = jury's left)
   const ours=(pl.blocks||[]).find(b=>b.ours),mid=ours?ours.al:pl.Lb/2,left=ps=>ps.filter(p=>p.b.al>=mid),right=ps=>ps.filter(p=>p.b.al<mid);
   $('simple').innerHTML=
     `<div class="mid top">${grp('bat','Batucada',of('bat'))}${grp('muneco','Muñecos',of('muneco'))}<div class="words">${words}</div></div>`+
     `<div class="side l">${grp('dragon','Dragón',of('dragon'))}${grp('pompon','Pompones',left(of('pompon')))}</div>`+
     `<div class="mid">`+
-    `<div class="zone"><h3>PADRES · ${pars.length+of('baston').length}</h3><div class="chips">${pars.map(chip).join('')}</div>${grp('baston','con bastones',of('baston'))}</div>`+
-    `<div class="zone kids"><h3>NIÑOS · ${kids.length}</h3><div class="chips">${kids.map(chip).join('')}</div></div></div>`+
+    `<div class="zone"><h3>PADRES · ${pars.length+of('baston').length}</h3><div class="chips">${famChips(pars)}</div>${grp('baston','con bastones',of('baston'))}</div>`+
+    `<div class="zone kids"><h3>NIÑOS · ${kids.length}</h3><div class="chips">${kidChips(kids)}</div></div></div>`+
     `<div class="side r">${grp('pompon','Pompones',right(of('pompon')))}</div>`+
     `<div class="front">${grp('miss','Misses',of('miss'))}</div>`+
     `<div class="front">${grp('coreo','Coreografía',of('coreo'))}${grp('antorcha','Antorcha',of('antorcha'))}${grp('escudo','Escudo',of('escudo'))}<div class="grp"><span class="ban">${sym('pancarta')} PANCARTA</span><div class="chips">${of('pancarta').map(chip).join('')}</div></div>${grp('aguila','Águila',of('aguila'))}${grp('canto','Canto',of('canto'))}</div>`;
@@ -1473,7 +1521,11 @@ function renderAtt(){
   $('att-pend').checked=ST.attPending!==false;$('att-live').checked=ST.attLive===true;
   $('att-ro').textContent=ST.attLive===true?'Solo el administrador cambia la asistencia.':'La asistencia aún no se publica: el plan cuenta a todas las familias.';
   const groups={};
-  FAMS.forEach(f=>{if(q&&!f.code.toUpperCase().includes(q))return;(groups[f.grades[0]||'Sin grado']=groups[f.grades[0]||'Sin grado']||[]).push(f);});
+  const af=ST.attFilter||'all',kv=f=>AKEYS(f).map(k=>(ST.att[f.code]||{})[k]);
+  document.querySelectorAll('[data-af]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.af===af)));
+  FAMS.forEach(f=>{if(q&&!f.code.toUpperCase().includes(q))return;
+    if(af==='pend'&&(f.absent||!kv(f).some(v=>!v)))return;
+    if(af==='vienen'&&(f.absent||kv(f).every(v=>v==='no')))return;(groups[f.grades[0]||'Sin grado']=groups[f.grades[0]||'Sin grado']||[]).push(f);});
   $('att-list').innerHTML=Object.keys(groups).sort().map(g=>`<h4>${esc(g)}</h4>`+groups[g].map(f=>{
     if(f.absent)return `<div class="arow out"><span class="acode">${esc(f.code)}</span><span class="anote">No asiste (marcado en la lista)</span></div>`;
     const a=ST.att[f.code]||{};
@@ -1488,6 +1540,7 @@ $('att-list').addEventListener('click',e=>{const b=e.target.closest('button[data
   else{const all=AKEYS(f).every(k=>a[k]==='si');AKEYS(f).forEach(k=>{a[k]=all?'no':'si';});}
   attChanged();});
 $('att-q').addEventListener('input',renderAtt);
+document.querySelectorAll('[data-af]').forEach(b=>b.addEventListener('click',()=>{ST.attFilter=b.dataset.af;saveState();renderAtt();}));
 $('att-pend').addEventListener('change',e=>{ST.attPending=e.target.checked;attChanged();});
 $('att-live').addEventListener('change',e=>{ST.attLive=e.target.checked;attChanged();});
 $('att-reset').addEventListener('click',()=>{ST.att={};attChanged();$('att-msg').textContent='Asistencia reiniciada: todos pendientes.';});
@@ -1537,6 +1590,7 @@ addEventListener('keydown',e=>{
 ST.closed=ST.closed||[];
 // families start with the summary collapsed (once; after that their own choice is kept)
 if(!ST.resumenDef){ST.resumenDef=1;if(!(new URLSearchParams(location.search).get('clave')||store.get('desfile-clave'))&&!ST.closed.includes('s-resumen'))ST.closed.push('s-resumen');}
+if(!ST.criteriosDef){ST.criteriosDef=1;if(!(new URLSearchParams(location.search).get('clave')||store.get('desfile-clave'))&&!ST.closed.includes('s-criterios'))ST.closed.push('s-criterios');}
 // the 2D plans start collapsed for everyone (once; after that each viewer's choice is kept)
 if(!ST.planosDef){ST.planosDef=1;['s-desfile','s-barra'].forEach(id=>{if(!ST.closed.includes(id))ST.closed.push(id);});}
 document.querySelectorAll('details.card').forEach(d=>{
