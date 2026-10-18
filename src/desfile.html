@@ -245,8 +245,9 @@ tr.fam-start td{border-top:2px solid var(--line)}
     <p class="lede">Simulación 3D sobre el plano del colegio: la columna recorre la ruta roja, pasa frente al escenario y forma la barra mirando al jurado. Cada familia aparece solo con su código de iniciales.</p>
     <button class="sync wait" data-sync title="Actualizar">Mostrando lo guardado · actualizando…</button>
     <a class="encuesta" id="encuesta" href="/encuesta/" hidden><i>⭐</i><span></span><b>Responder →</b></a>
-    <script>(function(){var a=document.getElementById('encuesta'),K='encuesta-activa';
-function show(x){if(x&&x.titulo){a.querySelector('span').textContent=x.titulo;a.hidden=false;}else a.hidden=true;}
+    <script>(function(){var ON=false; /* avisos de encuesta apagados por ahora: true para volver a mostrarlos */
+var a=document.getElementById('encuesta'),K='encuesta-activa';
+function show(x){if(ON&&x&&x.titulo){a.querySelector('span').textContent=x.titulo;a.hidden=false;}else a.hidden=true;}
 try{show(JSON.parse(localStorage.getItem(K)));}catch(e){}
 fetch('https://script.google.com/macros/s/AKfycbzyqLczr6k6k25Wl8O6g35x6anEPBhXnCSjMwIzkEAQB79vbrzdMgBZ1wzMrMuV/exec?encuesta=activa').then(function(r){return r.json();}).then(function(j){show(j.activa);try{localStorage.setItem(K,JSON.stringify(j.activa));}catch(e){}}).catch(function(){});})();</script>
   </header>
