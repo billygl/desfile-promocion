@@ -293,7 +293,7 @@ fetch('https://script.google.com/macros/s/AKfycbzyqLczr6k6k25Wl8O6g35x6anEPBhXnC
   <details class="card" id="s-simple" open>
     <summary><h2>Plano simple de la barra</h2></summary>
     <p class="lede-s">Así nos ve el jurado (arriba el fondo, abajo el frente). Misma asistencia y roles que el 3D.</p>
-    <label class="chk" id="simple-names-wrap" hidden><input type="checkbox" id="simple-names" /> Mostrar apellidos</label>
+    <label class="chk" id="simple-names-wrap"><input type="checkbox" id="simple-names" /> Mostrar nombres</label>
     <div class="simple" id="simple"></div>
     <div class="simple-jury">▼ jurado / escenario ▼</div>
   </details>
@@ -346,7 +346,7 @@ fetch('https://script.google.com/macros/s/AKfycbzyqLczr6k6k25Wl8O6g35x6anEPBhXnC
       </ul>
       <p class="note">Escala: 0.135 m por píxel del plano, ajustada al contorno del colegio en OpenStreetMap (±10%). La ruta y la línea de barra se redibujan con los botones del visor.</p>
     </details>
-  <footer class="ver">Versión 50 · 2026-10-17 20:04</footer>
+  <footer class="ver">Versión 51 · 2026-10-17 20:10</footer>
 </div>
 
 <aside id="att-panel" class="drawer" aria-label="Asistencia" hidden>
@@ -955,15 +955,18 @@ $('mats').addEventListener('click',e=>{const b=e.target.closest('[data-out]');if
 $('mats').addEventListener('change',e=>{const s=e.target.closest('[data-mat]');if(!s||!s.value||!ADMIN)return;ST.over[s.value]=s.dataset.mat;saveState();overMsg();rebuild();});
 // simplified barra seen from the jury, like a drawing: who is where, by family code
 function drawSimple(pl){
-  // family surname only when the names file is loaded AND the toggle is on (off by default)
-  const sur=f=>ST.simpleNames?famName(f):'';$('simple-names-wrap').hidden=!showNames();$('simple-names').checked=!!ST.simpleNames;
+  // like the 3D "Nombres" layer: off = only counts; on = family codes (everyone) or surname + first name (with the names file)
+  const show=!!ST.simpleNames,full=show&&showNames();$('simple-names').checked=show;
+  const first=n=>String(n||'').trim().split(/\s+/)[0]||'',sur=f=>famName(f)||f;
   const of=r=>pl.P.filter(p=>p.role===r),sym=k=>useEmoji()?ABBR_EMO[k]:ABBR_TXT[k];
-  const tag=(code,extra)=>{const n=sur(code);return `<span class="sc">${esc(code)}${extra?`<small>${extra}</small>`:''}${n?`<small>${esc(n)}</small>`:''}</span>`;};
-  const chip=p=>p.role==='miss'?`<span class="sc">${esc(p.grade)}</span>`:tag(p.fam,p.kid?'':p.g==='papa'?'pa':'ma');
-  const grp=(k,title,ps)=>ps.length?`<div class="grp"><span class="em">${sym(k)}</span><b>${title} ${ps.length}</b>${ps.map(chip).join('')}</div>`:'';
+  const chip=p=>p.role==='miss'?`<span class="sc">${esc(p.grade)}</span>`:full?`<span class="sc">${esc(sur(p.fam))}${first(personName(p))?`<small>${esc(first(personName(p)))}</small>`:''}</span>`:
+    `<span class="sc">${esc(p.fam)}${p.kid?'':`<small>${p.g==='papa'?'pa':'ma'}</small>`}</span>`;
+  const grp=(k,title,ps)=>ps.length?`<div class="grp"><span class="em">${sym(k)}</span><b>${title} ${ps.length}</b>${show?ps.map(chip).join(''):''}</div>`:'';
   const byFam=ps=>{const m=new Map();ps.forEach(p=>{if(!m.has(p.fam))m.set(p.fam,[]);m.get(p.fam).push(p);});return [...m];};
+  const famChip=(f,a,kids)=>full?`<span class="sc">${esc(sur(f))}<small>${esc(a.map(p=>first(personName(p))).filter(Boolean).join(', '))}</small></span>`:
+    `<span class="sc">${esc(f)}${kids?(a.length>1?`<small>×${a.length}</small>`:''):`<small>${a.map(p=>p.g==='papa'?'pa':'ma').join('·')}</small>`}</span>`;
   const words=WORDS.map(w=>{const ps=of('letra').filter(p=>p.word===w);
-    return `<div class="word">${ps.map(p=>`<span class="lt"><i>${esc(p.letter)}</i>${esc(p.fam)}</span>`).join('')||`<span class="lt"><i>${w}</i>—</span>`}</div>`;}).join('');
+    return `<div class="word">${ps.map(p=>`<span class="lt"><i>${esc(p.letter)}</i>${show?esc(full?sur(p.fam):p.fam):''}</span>`).join('')||`<span class="lt"><i>${w}</i></span>`}</div>`;}).join('');
   const kids=pl.P.filter(p=>p.kid),pars=of('padre');
   // same layout as the barra plan: left/right as the jury sees it (higher "al" = jury's left)
   const ours=(pl.blocks||[]).find(b=>b.ours),mid=ours?ours.al:pl.Lb/2,left=ps=>ps.filter(p=>p.b.al>=mid),right=ps=>ps.filter(p=>p.b.al<mid);
@@ -973,12 +976,12 @@ function drawSimple(pl){
     `<div class="band words">${words}</div>`+
     `<div class="side">${grp('dragon','Dragón',of('dragon'))}${grp('pompon','Pomp.',left(of('pompon')))}</div>`+
     `<div class="mid">`+
-    `<div class="zone"><h3>PADRES · ${pars.length+of('baston').length}</h3>${ST.simpleNames&&showNames()?byFam(pars).map(([f,a])=>tag(f,a.map(p=>p.g==='papa'?'pa':'ma').join('·'))).join(''):''}${grp('baston','bastones',of('baston'))}</div>`+
-    `<div class="zone kids"><h3>NIÑOS · ${kids.length}</h3>${byFam(kids).map(([f,a])=>`<span class="sc">${esc(f)}${a.length>1?`<small>×${a.length}</small>`:''}</span>`).join('')}</div></div>`+
+    `<div class="zone"><h3>PADRES · ${pars.length+of('baston').length}</h3>${show?byFam(pars).map(([f,a])=>famChip(f,a,false)).join(''):''}${grp('baston','bastones',of('baston'))}</div>`+
+    `<div class="zone kids"><h3>NIÑOS · ${kids.length}</h3>${show?byFam(kids).map(([f,a])=>famChip(f,a,true)).join(''):''}</div></div>`+
     `<div class="side">${grp('pompon','Pomp.',right(of('pompon')))}</div>`+
     `<div class="band">${grp('miss','Misses',of('miss'))}</div>`+
     `<div class="band">${grp('coreo','Coreo',of('coreo'))}${grp('antorcha','Antorcha',of('antorcha'))}${grp('escudo','Escudo',of('escudo'))}</div>`+
-    `<div class="band"><div class="grp"><span class="ban">${sym('pancarta')} PANCARTA</span>${of('pancarta').map(chip).join('')}</div>${grp('aguila','Águila',of('aguila'))}${grp('canto','Canto',of('canto'))}</div>`;
+    `<div class="band"><div class="grp"><span class="ban">${sym('pancarta')} PANCARTA ${of('pancarta').length}</span>${show?of('pancarta').map(chip).join(''):''}</div>${grp('aguila','Águila',of('aguila'))}${grp('canto','Canto',of('canto'))}</div>`;
 }
 function drawBarra(pl){
   const cw=$('svg-barra').parentElement.clientWidth||1100,narrow=cw<700,all=pl.P.map(p=>p.b);
