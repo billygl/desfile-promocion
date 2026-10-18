@@ -159,30 +159,27 @@ li{max-width:72ch}
 .ro-only,.admin-only{display:none}.ro .ro-only{display:block}body:not(.ro) .admin-only{display:flex}
 .ro #att-reset,.ro #task-add,.ro #task-restore,.ro #over-clear,.ro #fam-apply,.ro #fam-reset,.ro [data-del],.ro #d-route,.ro #d-bar,.ro #d-reset{display:none}
 .ro #att-list button,.ro #tasks input,.ro #tbody select,.ro #att-pend,.ro #fam-list,.ro .controls input,.ro .controls select{pointer-events:none}
-.simple{--sg:#1b5e34;--sy:#b8901c;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,3.6fr) minmax(0,1fr);gap:8px;align-items:stretch}
-.simple .side{grid-row:2;grid-column:1;display:flex;flex-direction:column;gap:8px;border-radius:10px;padding:6px;background:color-mix(in srgb,var(--sg) 10%,transparent)}
-.simple .side.r{grid-column:3}
-.simple .mid.top{grid-row:1;align-items:center}.simple .mid.top .words{align-self:stretch}
-.simple .mid{grid-column:2;grid-row:2;display:flex;flex-direction:column;gap:8px;min-width:0}
-.simple .front{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:flex-start}
-.simple .grp{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;min-width:0}
-.simple .grp>b{font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.simple .chips{display:flex;flex-wrap:wrap;gap:3px;justify-content:center}
-.simple .sc{font-family:var(--f-mono);font-size:.68rem;font-weight:600;padding:1px 4px;border-radius:4px;background:var(--bg);border:1px solid var(--line);white-space:nowrap}
-.simple .sc small{font-weight:400;color:var(--muted);margin-left:2px}
-.simple .zone{border:2px dashed var(--sg);border-radius:10px;padding:8px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.simple{--sg:#1b5e34;--sy:#b8901c;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,4fr) minmax(0,1fr);gap:4px;font-size:.6rem}
+.simple .band{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:3px 10px;justify-content:center;align-items:center}
+.simple .grp{display:flex;flex-wrap:wrap;gap:2px;align-items:center;justify-content:center;min-width:0}
+.simple .grp>b{font-size:.62rem;font-weight:700;color:var(--muted);white-space:nowrap}
+.simple .side{display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;border-radius:8px;padding:4px 2px;background:color-mix(in srgb,var(--sg) 10%,transparent);min-width:0}
+.simple .side .grp{flex-direction:column}
+.simple .mid{display:flex;flex-direction:column;gap:4px;min-width:0}
+.simple .sc{font-family:var(--f-mono);font-size:.6rem;font-weight:600;padding:0 3px;border-radius:3px;background:var(--bg);border:1px solid var(--line);white-space:nowrap;line-height:1.5}
+.simple .sc small{font-weight:400;color:var(--muted);margin-left:2px;font-size:.55rem}
+.simple .zone{border:1.5px dashed var(--sg);border-radius:8px;padding:4px;display:flex;flex-wrap:wrap;gap:2px;justify-content:center;align-items:center}
 .simple .zone.kids{border-color:var(--sy)}
-.simple .zone>h3{margin:0;font-size:1.05rem;letter-spacing:.04em;color:var(--sg)}
+.simple .zone>h3{flex-basis:100%;margin:0;text-align:center;font-size:.72rem;letter-spacing:.04em;color:var(--sg)}
 .simple .zone.kids>h3{color:var(--sy)}
-.simple .words{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.simple .word{display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 2px;border-radius:8px;background:color-mix(in srgb,var(--sy) 22%,transparent)}
-.simple .word>b{font-size:.8rem;letter-spacing:.05em}
-.simple .lt{display:flex;flex-direction:column;align-items:center;font-size:.62rem;font-family:var(--f-mono)}
-.simple .lt>i{font-style:normal;font-weight:800;font-size:.8rem;color:#fff;background:#d94f8a;border-radius:4px;padding:0 4px}
-.simple .ban{border:2px solid var(--sy);border-radius:10px;padding:6px 14px;font-weight:800;letter-spacing:.05em}
-.simple .em{font-size:1.25rem;line-height:1}
-.simple-jury{text-align:center;font-size:.78rem;color:var(--muted);margin-top:4px}
-@media (max-width:560px){.simple{grid-template-columns:minmax(0,1fr)}.simple .side,.simple .side.r{grid-row:auto;grid-column:1;flex-direction:row;flex-wrap:wrap;justify-content:center}.simple .mid{grid-row:auto}.simple .mid,.simple .front{grid-column:1}.simple .side.l{order:-1}}
+.simple .words{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.simple .word{display:flex;gap:2px;padding:2px 4px;border-radius:6px;background:color-mix(in srgb,var(--sy) 22%,transparent)}
+.simple .lt{display:flex;flex-direction:column;align-items:center;font-family:var(--f-mono);font-size:.55rem;line-height:1.2}
+.simple .lt>i{font-style:normal;font-weight:800;font-size:.7rem;color:#fff;background:#d94f8a;border-radius:3px;padding:0 3px;letter-spacing:.05em}
+.simple .ban{border:1.5px solid var(--sy);border-radius:6px;padding:1px 8px;font-weight:800;letter-spacing:.05em;font-size:.65rem}
+.simple .em{font-size:.85rem;line-height:1}
+.simple-jury{text-align:center;font-size:.7rem;color:var(--muted);margin-top:2px}
+#s-simple>p.lede-s{margin:0;font-size:.8rem;color:var(--muted)}
 .ro #s-material,.ro .admin-link{display:none}
 .mats{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
 .mat{border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -295,8 +292,8 @@ fetch('https://script.google.com/macros/s/AKfycbzyqLczr6k6k25Wl8O6g35x6anEPBhXnC
 
   <details class="card" id="s-simple" open>
     <summary><h2>Plano simple de la barra</h2></summary>
-    <p>Así nos ve el jurado: al fondo la batucada, los muñecos y las letras; luego papás y mamás, los niños, las misses y adelante la pancarta. Mismo orden, asistencia y roles que el plano de la barra y el 3D.</p>
-    <label class="chk" id="simple-names-wrap" hidden><input type="checkbox" id="simple-names" /> Mostrar nombres</label>
+    <p class="lede-s">Así nos ve el jurado (arriba el fondo, abajo el frente). Misma asistencia y roles que el 3D.</p>
+    <label class="chk" id="simple-names-wrap" hidden><input type="checkbox" id="simple-names" /> Mostrar apellidos</label>
     <div class="simple" id="simple"></div>
     <div class="simple-jury">▼ jurado / escenario ▼</div>
   </details>
@@ -349,7 +346,7 @@ fetch('https://script.google.com/macros/s/AKfycbzyqLczr6k6k25Wl8O6g35x6anEPBhXnC
       </ul>
       <p class="note">Escala: 0.135 m por píxel del plano, ajustada al contorno del colegio en OpenStreetMap (±10%). La ruta y la línea de barra se redibujan con los botones del visor.</p>
     </details>
-  <footer class="ver">Versión 49 · 2026-10-17 19:59</footer>
+  <footer class="ver">Versión 50 · 2026-10-17 20:04</footer>
 </div>
 
 <aside id="att-panel" class="drawer" aria-label="Asistencia" hidden>
@@ -431,6 +428,8 @@ const WALLS=[[[300,225],[430,55]],[[430,55],[540,135]]];
 const V=1.0; // m/s walking pace
 const KC=0.45; // row spacing while waiting to enter, relative to the marching spacing
 const WORDS=['LOVE','HONOR','SERVICE'];
+// each person carries two letters of a word: LO VE · HO NO R · SE RV IC E
+const LCHUNKS=WORDS.map(w=>w.match(/.{1,2}/g)),NLETRA=LCHUNKS.flat().length;
 const ROLE={
   padre:{c:'#1b5e34',n:'Papá / mamá'},
   nino:{c:'#7cc88a',n:'Niño / niña'},
@@ -612,7 +611,7 @@ function plan(c,fams){
   // manual assignments from the table win over everything else
   P.forEach(p=>{const o=ST.over[pkey(p)];if(!o||p.kid)return;p.lock=true;if(o!=='libre'&&ROLE[o])p.role=o;});
   const count=r=>P.filter(p=>p.role===r).length;
-  const need={coreo:1,canto:1,aguila:1,pancarta:3,bat:c.bat,dragon:3,muneco:6,pompon:6,antorcha:1,baston:8,escudo:1,letra:WORDS.join('').length};
+  const need={coreo:1,canto:1,aguila:1,pancarta:3,bat:c.bat,dragon:3,muneco:6,pompon:6,antorcha:1,baston:8,escudo:1,letra:NLETRA};
   const freePar=(f,g)=>f.par.find(p=>p.role==='padre'&&!p.lock&&(!g||p.g===g));
   const freeKid=f=>f.kid.find(p=>p.role==='nino'&&!p.lock);
   // explicit roles from the list
@@ -642,8 +641,8 @@ function plan(c,fams){
   // letters spell the words row by row
   const letters=by('letra');let li=0;
   sections.push({name:'Letras',lon});
-  WORDS.forEach(w=>{const gap=w.length>5?0.85:1.1;
-    for(let j=0;j<w.length&&li<letters.length;j++,li++){const p=letters[li];p.letter=w[j];p.word=w;put(p,(j-(w.length-1)/2)*gap,lon);}
+  LCHUNKS.forEach((cs,wi)=>{const w=WORDS[wi];
+    for(let j=0;j<cs.length&&li<letters.length;j++,li++){const p=letters[li];p.letter=cs[j];p.word=w;put(p,(j-(cs.length-1)/2)*1.3,lon);}
     lon+=ROW;});
   lon+=0.8;
   const bats=by('bat');
@@ -725,8 +724,8 @@ function plan(c,fams){
   byDir().forEach((p,i)=>{p.b=at(i%2?Lb-0.6:0.6,-1.0,'D');p.faceGroup=true;});
   let dp=0.4,rowNo=1;
   // letters: one row, a gap between words
-  const lseq=[];WORDS.forEach((w,wi)=>{if(wi)lseq.push(null);for(const ch of w)lseq.push(ch);});
-  const lg=0.62;
+  const lseq=[];LCHUNKS.forEach((cs,wi)=>{if(wi)lseq.push(null);cs.forEach(c=>lseq.push(c));});
+  const lg=1.1;
   let lq=[...letters];
   lseq.forEach((ch,j)=>{if(!ch)return;const p=lq.shift();if(p)p.b=at(mid+((lseq.length-1)/2-j)*lg,dp,rowNo);});
   if(letters.length){dp+=0.75;rowNo++;}
@@ -769,8 +768,8 @@ function plan(c,fams){
         const s=freeK.splice(bi,1)[0];if(s)put2(p,s.lat,s.d,'P'+s.r,{blk:'parents',r:s.r});});
       let d=ps.end+0.3;
       // LOVE · HONOR · SERVICE in one row, read left to right by the jury
-      const seq=[];WORDS.forEach((w,wi)=>{if(wi)seq.push(null);for(const ch of w)seq.push(ch);});
-      const lg=Math.min(0.42,(2*inner)/(seq.length-1));let lq3=[...letters];
+      const seq=[];LCHUNKS.forEach((cs,wi)=>{if(wi)seq.push(null);cs.forEach(c=>seq.push(c));});
+      const lg=Math.min(0.85,(2*inner)/(seq.length-1));let lq3=[...letters];
       seq.forEach((ch,j)=>{if(!ch)return;const p=lq3.shift();if(p)put2(p,(j-(seq.length-1)/2)*lg,d,'L1',{blk:'L',r:1});});
       d+=1.0;
       const mus=by('muneco');mus.forEach((p,i)=>put2(p,(i-(mus.length-1)/2)*Math.min(1.1,(2*inner)/Math.max(1,mus.length-1)),d,'MU'));
@@ -941,7 +940,7 @@ function drawParade(pl){
 // admin view: one card per material with who carries it; writes the same manual assignments (ST.over) as the table
 const MATS=['aguila','antorcha','escudo','pancarta','letra','muneco','dragon','pompon','baston','bat','coreo','canto'];
 function drawMaterial(pl){
-  const need={coreo:1,canto:1,aguila:1,pancarta:3,bat:+$('i-bat').value,dragon:3,muneco:6,pompon:6,antorcha:1,baston:8,escudo:1,letra:WORDS.join('').length};
+  const need={coreo:1,canto:1,aguila:1,pancarta:3,bat:+$('i-bat').value,dragon:3,muneco:6,pompon:6,antorcha:1,baston:8,escudo:1,letra:NLETRA};
   const adults=pl.P.filter(p=>!p.kid&&p.role!=='miss').sort((a,b)=>a.fam.localeCompare(b.fam)||a.g.localeCompare(b.g));
   const tag=p=>{const n=personName(p);return `${esc(p.fam)} ${p.g==='papa'?'pa':'ma'}${n?` <small>${esc(n)}</small>`:''}`;};
   const opt=p=>{const n=personName(p);return `${p.fam} ${p.g==='papa'?'papá':'mamá'}${n?' · '+n:''}${p.role!=='padre'?' ('+(ROLE[p.role]?ROLE[p.role].n:p.role)+')':''}`;};
@@ -956,30 +955,30 @@ $('mats').addEventListener('click',e=>{const b=e.target.closest('[data-out]');if
 $('mats').addEventListener('change',e=>{const s=e.target.closest('[data-mat]');if(!s||!s.value||!ADMIN)return;ST.over[s.value]=s.dataset.mat;saveState();overMsg();rebuild();});
 // simplified barra seen from the jury, like a drawing: who is where, by family code
 function drawSimple(pl){
-  // names only when the names file is loaded AND the toggle is on (off by default)
-  const simpleName=p=>ST.simpleNames?personName(p):'';$('simple-names-wrap').hidden=!showNames();$('simple-names').checked=!!ST.simpleNames;
+  // family surname only when the names file is loaded AND the toggle is on (off by default)
+  const sur=f=>ST.simpleNames?famName(f):'';$('simple-names-wrap').hidden=!showNames();$('simple-names').checked=!!ST.simpleNames;
   const of=r=>pl.P.filter(p=>p.role===r),sym=k=>useEmoji()?ABBR_EMO[k]:ABBR_TXT[k];
-  const chip=p=>{const n=simpleName(p);return `<span class="sc">${p.role==='miss'?'Miss '+esc(p.grade):esc(p.fam)}${p.kid||p.role==='miss'?'':`<small>${p.g==='papa'?'pa':'ma'}</small>`}${n?`<small>${esc(n)}</small>`:''}</span>`;};
-  const grp=(k,title,ps)=>ps.length?`<div class="grp"><span class="em">${sym(k)}</span><b>${title} · ${ps.length}</b><div class="chips">${ps.map(chip).join('')}</div></div>`:'';
+  const tag=(code,extra)=>{const n=sur(code);return `<span class="sc">${esc(code)}${extra?`<small>${extra}</small>`:''}${n?`<small>${esc(n)}</small>`:''}</span>`;};
+  const chip=p=>p.role==='miss'?`<span class="sc">${esc(p.grade)}</span>`:tag(p.fam,p.kid?'':p.g==='papa'?'pa':'ma');
+  const grp=(k,title,ps)=>ps.length?`<div class="grp"><span class="em">${sym(k)}</span><b>${title} ${ps.length}</b>${ps.map(chip).join('')}</div>`:'';
+  const byFam=ps=>{const m=new Map();ps.forEach(p=>{if(!m.has(p.fam))m.set(p.fam,[]);m.get(p.fam).push(p);});return [...m];};
   const words=WORDS.map(w=>{const ps=of('letra').filter(p=>p.word===w);
-    return `<div class="word"><b>${w}</b><div class="chips">${ps.map(p=>`<span class="lt"><i>${esc(p.letter)}</i>${esc(p.fam)}</span>`).join('')||'<span class="sc">sin asignar</span>'}</div></div>`;}).join('');
+    return `<div class="word">${ps.map(p=>`<span class="lt"><i>${esc(p.letter)}</i>${esc(p.fam)}</span>`).join('')||`<span class="lt"><i>${w}</i>—</span>`}</div>`;}).join('');
   const kids=pl.P.filter(p=>p.kid),pars=of('padre');
-  // one chip per family: "AO pa·ma"; kids: "AnB ×2"
-  const famChips=ps=>{const m=new Map();ps.forEach(p=>{if(!m.has(p.fam))m.set(p.fam,[]);m.get(p.fam).push(p);});
-    return [...m].map(([f,a])=>{const n=a.map(simpleName).filter(Boolean).join(', ');return `<span class="sc">${esc(f)}<small>${a.map(p=>p.g==='papa'?'pa':'ma').join('·')}</small>${n?`<small>${esc(n)}</small>`:''}</span>`;}).join('');};
-  const kidChips=ps=>{const m=new Map();ps.forEach(p=>{if(!m.has(p.fam))m.set(p.fam,[]);m.get(p.fam).push(p);});
-    return [...m].map(([f,a])=>{const n=a.map(simpleName).filter(Boolean).join(', ');return `<span class="sc">${esc(f)}${a.length>1?`<small>×${a.length}</small>`:''}${n?`<small>${esc(n)}</small>`:''}</span>`;}).join('');};
   // same layout as the barra plan: left/right as the jury sees it (higher "al" = jury's left)
   const ours=(pl.blocks||[]).find(b=>b.ours),mid=ours?ours.al:pl.Lb/2,left=ps=>ps.filter(p=>p.b.al>=mid),right=ps=>ps.filter(p=>p.b.al<mid);
   $('simple').innerHTML=
-    `<div class="mid top">${grp('bat','Batucada',of('bat'))}${grp('muneco','Muñecos',of('muneco'))}<div class="words">${words}</div></div>`+
-    `<div class="side l">${grp('dragon','Dragón',of('dragon'))}${grp('pompon','Pompones',left(of('pompon')))}</div>`+
+    `<div class="band">${grp('bat','Batucada',of('bat'))}</div>`+
+    `<div class="band">${grp('muneco','Muñecos',of('muneco'))}</div>`+
+    `<div class="band words">${words}</div>`+
+    `<div class="side">${grp('dragon','Dragón',of('dragon'))}${grp('pompon','Pomp.',left(of('pompon')))}</div>`+
     `<div class="mid">`+
-    `<div class="zone"><h3>PADRES · ${pars.length+of('baston').length}</h3><div class="chips">${famChips(pars)}</div>${grp('baston','con bastones',of('baston'))}</div>`+
-    `<div class="zone kids"><h3>NIÑOS · ${kids.length}</h3><div class="chips">${kidChips(kids)}</div></div></div>`+
-    `<div class="side r">${grp('pompon','Pompones',right(of('pompon')))}</div>`+
-    `<div class="front">${grp('miss','Misses',of('miss'))}</div>`+
-    `<div class="front">${grp('coreo','Coreografía',of('coreo'))}${grp('antorcha','Antorcha',of('antorcha'))}${grp('escudo','Escudo',of('escudo'))}<div class="grp"><span class="ban">${sym('pancarta')} PANCARTA</span><div class="chips">${of('pancarta').map(chip).join('')}</div></div>${grp('aguila','Águila',of('aguila'))}${grp('canto','Canto',of('canto'))}</div>`;
+    `<div class="zone"><h3>PADRES · ${pars.length+of('baston').length}</h3>${ST.simpleNames&&showNames()?byFam(pars).map(([f,a])=>tag(f,a.map(p=>p.g==='papa'?'pa':'ma').join('·'))).join(''):''}${grp('baston','bastones',of('baston'))}</div>`+
+    `<div class="zone kids"><h3>NIÑOS · ${kids.length}</h3>${byFam(kids).map(([f,a])=>`<span class="sc">${esc(f)}${a.length>1?`<small>×${a.length}</small>`:''}</span>`).join('')}</div></div>`+
+    `<div class="side">${grp('pompon','Pomp.',right(of('pompon')))}</div>`+
+    `<div class="band">${grp('miss','Misses',of('miss'))}</div>`+
+    `<div class="band">${grp('coreo','Coreo',of('coreo'))}${grp('antorcha','Antorcha',of('antorcha'))}${grp('escudo','Escudo',of('escudo'))}</div>`+
+    `<div class="band"><div class="grp"><span class="ban">${sym('pancarta')} PANCARTA</span>${of('pancarta').map(chip).join('')}</div>${grp('aguila','Águila',of('aguila'))}${grp('canto','Canto',of('canto'))}</div>`;
 }
 function drawBarra(pl){
   const cw=$('svg-barra').parentElement.clientWidth||1100,narrow=cw<700,all=pl.P.map(p=>p.b);
@@ -1194,7 +1193,7 @@ function makePerson(p){
     g.add(stick('#ffffff',1.5,0.22,0.6,0.12));
     for(let i=0;i<5;i++)g.add(ball(['#2aa84a','#c9a227','#111111'][i%3],0.1,0.22+Math.cos(i*1.6)*0.07,2.05+i*0.12,0.12+Math.sin(i*1.6)*0.07));
   }else if(R==='letra'){
-    const b=letterBoard(p.letter||'?');b.position.set(0,p.kid?1.05:1.3,0.3);g.add(b);
+    const ls=[...(p.letter||'?')];const sc=ls.length>1?0.42:0.55;ls.forEach((ch,i)=>{const b=letterBoard(ch);b.scale.set(sc,sc,0.03);b.position.set((i-(ls.length-1)/2)*(sc+0.02),p.kid?1.05:1.3,0.3);g.add(b);});
   }else if(R==='escudo'){
     const s=new THREE.Mesh(new THREE.PlaneGeometry(0.68,0.88),new THREE.MeshStandardMaterial({map:ESCUDO_TEX,transparent:true,alphaTest:0.1,side:THREE.DoubleSide}));
     s.position.set(0,p.kid?1.15:1.35,0.3);s.castShadow=true;g.add(s);
