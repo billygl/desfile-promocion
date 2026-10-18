@@ -39,6 +39,7 @@ h2{font-size:1.25rem;font-weight:600}
 .controls label{display:flex;flex-direction:column;gap:3px;font-size:.75rem;color:var(--muted);letter-spacing:.03em}
 .controls input[type=number],.controls select{font-family:var(--f-mono);font-size:.9rem;width:96px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg)}
 .controls select{width:auto}
+#simple-names-wrap{display:flex;align-items:center;gap:6px;font-size:.85rem}#simple-names-wrap[hidden]{display:none}
 .controls label.chk{flex-direction:row;align-items:center;gap:6px;font-size:.85rem;color:var(--fg);padding-bottom:6px}
 .viewer{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--scene);height:min(72vh,660px);min-height:380px}
 #c3d{display:block;width:100%;height:100%;touch-action:none}
@@ -294,6 +295,7 @@ fetch('https://script.google.com/macros/s/AKfycbzyqLczr6k6k25Wl8O6g35x6anEPBhXnC
   <details class="card" id="s-simple" open>
     <summary><h2>Plano simple de la barra</h2></summary>
     <p>Así nos ve el jurado: al fondo la batucada, los muñecos y las letras; luego papás y mamás, los niños, las misses y adelante la pancarta. Mismo orden, asistencia y roles que el plano de la barra y el 3D.</p>
+    <label class="chk" id="simple-names-wrap" hidden><input type="checkbox" id="simple-names" /> Mostrar nombres</label>
     <div class="simple" id="simple"></div>
     <div class="simple-jury">▼ jurado / escenario ▼</div>
   </details>
@@ -346,7 +348,7 @@ fetch('https://script.google.com/macros/s/AKfycbzyqLczr6k6k25Wl8O6g35x6anEPBhXnC
       </ul>
       <p class="note">Escala: 0.135 m por píxel del plano, ajustada al contorno del colegio en OpenStreetMap (±10%). La ruta y la línea de barra se redibujan con los botones del visor.</p>
     </details>
-  <footer class="ver">Versión 47 · 2026-10-17 18:52</footer>
+  <footer class="ver">Versión 48 · 2026-10-17 19:06</footer>
 </div>
 
 <aside id="att-panel" class="drawer" aria-label="Asistencia" hidden>
@@ -953,17 +955,19 @@ $('mats').addEventListener('click',e=>{const b=e.target.closest('[data-out]');if
 $('mats').addEventListener('change',e=>{const s=e.target.closest('[data-mat]');if(!s||!s.value||!ADMIN)return;ST.over[s.value]=s.dataset.mat;saveState();overMsg();rebuild();});
 // simplified barra seen from the jury, like a drawing: who is where, by family code
 function drawSimple(pl){
+  // names only when the names file is loaded AND the toggle is on (off by default)
+  const simpleName=p=>ST.simpleNames?personName(p):'';$('simple-names-wrap').hidden=!showNames();$('simple-names').checked=!!ST.simpleNames;
   const of=r=>pl.P.filter(p=>p.role===r),sym=k=>useEmoji()?ABBR_EMO[k]:ABBR_TXT[k];
-  const chip=p=>{const n=personName(p);return `<span class="sc">${p.role==='miss'?'Miss '+esc(p.grade):esc(p.fam)}${p.kid||p.role==='miss'?'':`<small>${p.g==='papa'?'pa':'ma'}</small>`}${n?`<small>${esc(n)}</small>`:''}</span>`;};
+  const chip=p=>{const n=simpleName(p);return `<span class="sc">${p.role==='miss'?'Miss '+esc(p.grade):esc(p.fam)}${p.kid||p.role==='miss'?'':`<small>${p.g==='papa'?'pa':'ma'}</small>`}${n?`<small>${esc(n)}</small>`:''}</span>`;};
   const grp=(k,title,ps)=>ps.length?`<div class="grp"><span class="em">${sym(k)}</span><b>${title} · ${ps.length}</b><div class="chips">${ps.map(chip).join('')}</div></div>`:'';
   const words=WORDS.map(w=>{const ps=of('letra').filter(p=>p.word===w);
     return `<div class="word"><b>${w}</b><div class="chips">${ps.map(p=>`<span class="lt"><i>${esc(p.letter)}</i>${esc(p.fam)}</span>`).join('')||'<span class="sc">sin asignar</span>'}</div></div>`;}).join('');
   const kids=pl.P.filter(p=>p.kid),pars=of('padre');
   // one chip per family: "AO pa·ma"; kids: "AnB ×2"
   const famChips=ps=>{const m=new Map();ps.forEach(p=>{if(!m.has(p.fam))m.set(p.fam,[]);m.get(p.fam).push(p);});
-    return [...m].map(([f,a])=>{const n=a.map(personName).filter(Boolean).join(', ');return `<span class="sc">${esc(f)}<small>${a.map(p=>p.g==='papa'?'pa':'ma').join('·')}</small>${n?`<small>${esc(n)}</small>`:''}</span>`;}).join('');};
+    return [...m].map(([f,a])=>{const n=a.map(simpleName).filter(Boolean).join(', ');return `<span class="sc">${esc(f)}<small>${a.map(p=>p.g==='papa'?'pa':'ma').join('·')}</small>${n?`<small>${esc(n)}</small>`:''}</span>`;}).join('');};
   const kidChips=ps=>{const m=new Map();ps.forEach(p=>{if(!m.has(p.fam))m.set(p.fam,[]);m.get(p.fam).push(p);});
-    return [...m].map(([f,a])=>{const n=a.map(personName).filter(Boolean).join(', ');return `<span class="sc">${esc(f)}${a.length>1?`<small>×${a.length}</small>`:''}${n?`<small>${esc(n)}</small>`:''}</span>`;}).join('');};
+    return [...m].map(([f,a])=>{const n=a.map(simpleName).filter(Boolean).join(', ');return `<span class="sc">${esc(f)}${a.length>1?`<small>×${a.length}</small>`:''}${n?`<small>${esc(n)}</small>`:''}</span>`;}).join('');};
   // same layout as the barra plan: left/right as the jury sees it (higher "al" = jury's left)
   const ours=(pl.blocks||[]).find(b=>b.ours),mid=ours?ours.al:pl.Lb/2,left=ps=>ps.filter(p=>p.b.al>=mid),right=ps=>ps.filter(p=>p.b.al<mid);
   $('simple').innerHTML=
@@ -1578,7 +1582,8 @@ $('att-copy').addEventListener('click',()=>{
   try{navigator.clipboard.writeText(text).then(()=>{$('att-msg').textContent='Resumen copiado. Pégalo en WhatsApp.';},()=>{$('att-msg').textContent='Tu navegador no dejó copiar.';});}catch(err){$('att-msg').textContent='Tu navegador no dejó copiar.';}
 });
 function namesMsg(){$('names-msg').textContent=NAMES?`${Object.keys(NAMES).length} familias con nombres en este navegador.`:'Sin nombres importados.';$('names-show').checked=ST.showNames!==false;}
-function namesChanged(){namesMsg();if(PL)renderInfo(PL);if(!apanel.hidden)renderAtt();}
+$('simple-names').addEventListener('change',e=>{ST.simpleNames=e.target.checked;saveState();if(PL)drawSimple(PL);});
+function namesChanged(){namesMsg();if(PL){renderInfo(PL);drawSimple(PL);}if(!apanel.hidden)renderAtt();}
 $('names-file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{try{const d=JSON.parse(r.result);const fams=d.familias||d;if(typeof fams!=='object'||Array.isArray(fams))throw 0;
       NAMES=fams;try{localStorage.setItem(NAMES_KEY,JSON.stringify(fams));}catch(err){}ST.showNames=true;saveState();namesChanged();}
