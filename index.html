@@ -179,8 +179,11 @@ li{max-width:72ch}
 .simple .ban{border:1.5px solid var(--sy);border-radius:6px;padding:1px 8px;font-weight:800;letter-spacing:.05em;font-size:.65rem}
 .simple .em{font-size:.85rem;line-height:1}
 .simple-jury{text-align:center;font-size:.7rem;color:var(--muted);margin-top:2px}
-#s-simple>p.lede-s{margin:0;font-size:.8rem;color:var(--muted)}
-.ro #s-material,.ro .admin-link{display:none}
+#f-fam{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--fg);min-width:200px;max-width:100%}
+.pane{display:flex;flex-direction:column;gap:8px}.pane[hidden]{display:none}.ptabs{max-width:360px}
+#s-planos p.lede-s{margin:0;font-size:.8rem;color:var(--muted)}
+.ro #s-material,.ro #s-tareas,.ro .admin-link{display:none}
+body:not(.ro) p.admin-only{display:block}
 .mats{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
 .mat{border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;min-width:0}
 .mat h3{margin:0;font-size:.95rem;display:flex;gap:6px;align-items:center}
@@ -229,8 +232,8 @@ tr.fam-start td{border-top:2px solid var(--line)}
 </head>
 <body>
 <nav class="jump" aria-label="Secciones"><div class="in">
-  <a href="#s-resumen">Resumen</a><a href="#s-visor">Visor 3D</a><a href="#s-simple">Plano simple</a><a href="#s-material" class="admin-link">Por material</a><a href="#s-desfile">Plano desfile</a><a href="#s-barra">Plano barra</a><a href="#s-tabla">Por familia</a><a href="#s-tareas">Tareas</a><a href="#s-criterios">Criterios</a>
-  <select id="jump-sel" aria-label="Ir a la sección"><option value="">Ir a…</option><option value="#s-resumen">Resumen</option><option value="#s-visor">Visor 3D</option><option value="#s-simple">Plano simple</option><option value="#s-desfile">Plano desfile</option><option value="#s-barra">Plano barra</option><option value="#s-tabla">Por familia</option><option value="#s-tareas">Tareas</option><option value="#s-criterios">Criterios</option></select>
+  <a href="#s-resumen">Resumen</a><a href="#s-visor">Visor 3D</a><a href="#s-planos">Planos</a><a href="#s-tabla">Por familia</a><a href="#s-material" class="admin-link">Por material</a><a href="#s-tareas" class="admin-link">Tareas</a><a href="#s-criterios">Criterios</a>
+  <select id="jump-sel" aria-label="Ir a la sección"><option value="">Ir a…</option><option value="#s-resumen">Resumen</option><option value="#s-visor">Visor 3D</option><option value="#s-planos">Planos</option><option value="#s-tabla">Por familia</option><option value="#s-material" class="admin-link">Por material</option><option value="#s-tareas" class="admin-link">Tareas</option><option value="#s-criterios">Criterios</option></select>
   <button class="help" id="open-att" title="Tecla A" style="margin-left:auto"><span class="l">Asistencia</span><span class="s">Asist.</span></button>
   <button class="help" id="open-config" title="Tecla C"><span class="l">Configuración</span><span class="s">Config.</span></button>
   <button class="help" data-help="general" title="Tecla L"><span class="l">Leyenda</span><span class="s">?</span></button>
@@ -290,12 +293,23 @@ fetch('https://script.google.com/macros/s/AKfycbzyqLczr6k6k25Wl8O6g35x6anEPBhXnC
     </section>
   </details>
 
-  <details class="card" id="s-simple" open>
-    <summary><h2>Plano simple de la barra</h2></summary>
-    <p class="lede-s">Así nos ve el jurado (arriba el fondo, abajo el frente). Misma asistencia y roles que el 3D.</p>
-    <label class="chk" id="simple-names-wrap"><input type="checkbox" id="simple-names" /> Mostrar nombres</label>
-    <div class="simple" id="simple"></div>
-    <div class="simple-jury">▼ jurado / escenario ▼</div>
+  <details class="card" id="s-planos" open>
+    <summary><h2>Planos</h2><button class="help" id="planos-help" data-help="barra" hidden>Leyenda</button></summary>
+    <div class="attf ptabs" role="group" aria-label="Plano"><button data-pt="simple" aria-pressed="true">Simple</button><button data-pt="desfile" aria-pressed="false">Desfile</button><button data-pt="barra" aria-pressed="false">Barra</button></div>
+    <div class="pane" data-pane="simple">
+      <p class="lede-s">Así nos ve el jurado (arriba el fondo, abajo el frente). Misma asistencia y roles que el 3D.</p>
+      <label class="chk" id="simple-names-wrap"><input type="checkbox" id="simple-names" /> Mostrar nombres</label>
+      <div class="simple" id="simple"></div>
+      <div class="simple-jury">▼ jurado / escenario ▼</div>
+    </div>
+    <div class="pane" data-pane="desfile" hidden>
+      <p id="parade-sum"></p>
+      <div class="scroll"><svg id="svg-parade" role="img" aria-label="Formación del desfile vista desde arriba"></svg></div>
+    </div>
+    <div class="pane" data-pane="barra" hidden>
+      <p id="barra-sum"></p>
+      <div class="scroll"><svg id="svg-barra" role="img" aria-label="Formación de la barra vista desde arriba"></svg></div>
+    </div>
   </details>
 
   <details class="card" id="s-material" open>
@@ -304,22 +318,11 @@ fetch('https://script.google.com/macros/s/AKfycbzyqLczr6k6k25Wl8O6g35x6anEPBhXnC
     <div class="mats" id="mats"></div>
   </details>
 
-  <details class="card" id="s-desfile" open>
-    <summary><h2>Plano del desfile</h2><button class="help" data-help="desfile">Leyenda</button></summary>
-    <p id="parade-sum"></p>
-    <div class="scroll"><svg id="svg-parade" role="img" aria-label="Formación del desfile vista desde arriba"></svg></div>
-  </details>
-
-  <details class="card" id="s-barra" open>
-    <summary><h2>Plano de la barra</h2><button class="help" data-help="barra">Leyenda</button></summary>
-    <p id="barra-sum"></p>
-    <div class="scroll"><svg id="svg-barra" role="img" aria-label="Formación de la barra vista desde arriba"></svg></div>
-  </details>
-
   <details class="card" id="s-tabla" open>
     <summary><h2>Propuesta por familia</h2><button class="help" data-help="tabla">Leyenda</button></summary>
-    <p>Dónde va cada integrante en el desfile y en la barra. Para repartir rápido, cambia el rol en la columna <b>Rol</b>: queda fijo para esa persona y el resto se reacomoda solo. Todo se guarda en este navegador, aunque cierres Chrome.</p>
-    <div class="row"><input id="f-filter" type="search" placeholder="Buscar código…" aria-label="Buscar código"><button class="btn" id="over-clear">Quitar asignaciones manuales</button><span class="note" id="over-msg"></span></div>
+    <p class="ro-only" style="margin:0">Elige tu familia para ver qué lleva cada uno y dónde va en el desfile y en la barra.</p>
+    <p class="admin-only" style="margin:0">Dónde va cada integrante. Cambia el rol en la columna <b>Rol</b>: queda fijo para esa persona y el resto se reacomoda solo.</p>
+    <div class="row"><select id="f-fam" aria-label="Familia"></select><button class="btn admin-only" id="over-clear">Quitar asignaciones manuales</button><span class="note" id="over-msg"></span></div>
     <div class="key"><span>👨 papá · 👩 mamá · 🧒 hijo/a</span><span><b>F12 Iz</b> desfile: fila 12 desde la cabeza, lado izquierdo de la marcha</span><span><b>F3 De</b> barra: fila 3 de la columna, lado derecho visto desde el jurado</span><span><b>L1</b> letras · <b>Del</b> delante de la línea · <b>Bat</b> batucada · <b>Atr</b> al fondo · <b>Ce</b> centro</span></div>
     <div class="tablewrap"><table><thead><tr><th>Código</th><th aria-label="Integrante">👪</th><th>Rol</th><th>Desfile</th><th>Barra</th></tr></thead><tbody id="tbody"></tbody></table></div>
   </details>
@@ -346,7 +349,7 @@ fetch('https://script.google.com/macros/s/AKfycbzyqLczr6k6k25Wl8O6g35x6anEPBhXnC
       </ul>
       <p class="note">Escala: 0.135 m por píxel del plano, ajustada al contorno del colegio en OpenStreetMap (±10%). La ruta y la línea de barra se redibujan con los botones del visor.</p>
     </details>
-  <footer class="ver">Versión 51 · 2026-10-17 20:10</footer>
+  <footer class="ver">Versión 52 · 2026-10-17 20:33</footer>
 </div>
 
 <aside id="att-panel" class="drawer" aria-label="Asistencia" hidden>
@@ -1013,7 +1016,12 @@ function drawBarra(pl){
   const s=$('svg-barra');s.setAttribute('viewBox',`0 0 ${w} ${h}`);s.style.color='var(--fg)';s.innerHTML=g;
 }
 function renderTable(pl){
-  const q=$('f-filter').value.trim().toUpperCase();
+  // family picker: empty until someone picks their family; the admin can also see all
+  const fs=$('f-fam'),codes=[...new Set(pl.fams.map(f=>f.code))].sort((a,b)=>a.localeCompare(b));
+  let q=ST.famSel||'';if(q==='*'&&!ADMIN)q='';if(q&&q!=='*'&&!codes.includes(q))q='';
+  fs.innerHTML=`<option value="">Elige tu familia…</option>${ADMIN?'<option value="*">Todas las familias</option>':''}`+codes.map(c=>`<option value="${esc(c)}">${esc(c)}${famName(c)?' · '+esc(famName(c)):''}</option>`).join('');fs.value=q;
+  if(!q){$('tbody').innerHTML='<tr><td colspan="5" class="note" style="padding:12px 8px">Elige tu familia arriba.</td></tr>';return;}
+  const pick=c=>q==='*'||c===q;
   const side=p=>p.lat<-0.1?'Iz':p.lat>0.1?'De':'Ce';
   const who=p=>p.kid?(p.f.kids>1?'Hijo/a '+p.idx:'Hijo/a'):GENDER[p.g];
   const emo=p=>p.role==='miss'?'<span title="Miss">👩‍🏫</span>':`<span title="${who(p)}">${p.kid?'🧒':p.g==='papa'?'👨':'👩'}</span>${p.kid&&p.f.kids>1?`<small>${p.idx}</small>`:''}${personName(p)?`<span class="pn">${esc(personName(p))}</span>`:''}`;
@@ -1022,14 +1030,14 @@ function renderTable(pl){
   const rol=p=>p.role==='padre'||p.role==='nino'?'sin rol':p.role==='letra'?`Letra ${p.letter||''}`:SHORT[p.role];
   const ourAl=(pl.blocks[0]||{al:pl.mid}).al;
   const bar=p=>p.b.row==='MS'?'Delante (misses)':p.b.blk==='kids'?`Niños F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.blk==='parents'?`Padres F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.row==='MU'?'Muñecos (fondo)':p.b.row==='S'?`Costado ${bs(p.b.al,ourAl)}`:p.b.row==='M'&&!p.b.r?'Borde der.':p.b.row==='M'?`F${p.b.r} ${bs(p.b.al,ourAl)} borde`:p.b.blk==='col'?`F${p.b.r} ${bs(p.b.al,ourAl)}`:p.b.blk==='L'?`L${p.b.r}`:p.b.row==='B'||p.b.row==='C'?'Bat':p.b.row==='F'?'Atr':p.b.row==='D'?'Del':p.b.blk?`${p.b.blk} F${p.b.r}`:`F${p.b.row} P${p.bpos}`;
-  const list=pl.P.filter(p=>!q||p.fam.toUpperCase().includes(q)).sort((a,b)=>a.fam.localeCompare(b.fam)||a.kid-b.kid||a.idx-b.idx);
+  const list=pl.P.filter(p=>p.role==='miss'?q==='*':pick(p.fam)).sort((a,b)=>a.fam.localeCompare(b.fam)||a.kid-b.kid||a.idx-b.idx);
   let last='';
   $('tbody').innerHTML=list.map(p=>{const st=p.fam!==last?' class="fam-start"':'';const code=p.role==='miss'?'Miss <span style="color:var(--muted);font-weight:400">'+esc(p.grade)+'</span>':p.fam!==last?esc(p.fam)+' <span style="color:var(--muted);font-weight:400">'+[...new Set(p.f.kid.map(k=>k.grade))].join('/')+'</span>'+(famName(p.fam)?`<span class="pn">${esc(famName(p.fam))}</span>`:''):'';last=p.fam;
     if(p.role==='miss')return `<tr class="fam-start"><td class="code">${code}</td><td class="who">${emo(p)}</td><td>Miss</td><td class="pos">F${p.prow} ${side(p)}</td><td class="pos">${bar(p)}</td></tr>`;
     const k=pkey(p),cur=ST.over[k]||'',opts=['aguila','coreo','canto','pancarta','escudo','antorcha','letra','bat','dragon','muneco','pompon','baston'];
-    const sel=p.kid?'<span style="color:var(--muted)">no lleva nada</span>':`<select class="${cur?'manual':''}" data-k="${esc(k)}" aria-label="Rol de ${esc(p.fam)} ${esc(who(p))}"><option value=""${cur?'':' selected'}>${cur?'Automático':esc(rol(p))+' · auto'}</option><option value="libre"${cur==='libre'?' selected':''}>Sin rol</option>${opts.map(o=>`<option value="${o}"${cur===o?' selected':''}>${SHORT[o]}</option>`).join('')}</select>`;
+    const sel=p.kid?'<span style="color:var(--muted)">no lleva nada</span>':!ADMIN?`<span>${rol(p)}</span>`:`<select class="${cur?'manual':''}" data-k="${esc(k)}" aria-label="Rol de ${esc(p.fam)} ${esc(who(p))}"><option value=""${cur?'':' selected'}>${cur?'Automático':esc(rol(p))+' · auto'}</option><option value="libre"${cur==='libre'?' selected':''}>Sin rol</option>${opts.map(o=>`<option value="${o}"${cur===o?' selected':''}>${SHORT[o]}</option>`).join('')}</select>`;
     return `<tr${st}><td class="code">${code}</td><td class="who">${emo(p)}</td><td>${sel}</td><td class="pos">F${p.prow} ${side(p)}</td><td class="pos">${bar(p)}</td></tr>`;}).join('')
-    +pl.fams.filter(f=>!pl.att.includes(f)&&(!q||f.code.toUpperCase().includes(q))).map(f=>`<tr class="fam-start"><td class="code">${esc(f.code)}</td><td colspan="4">No viene</td></tr>`).join('');
+    +pl.fams.filter(f=>!pl.att.includes(f)&&pick(f.code)).map(f=>`<tr class="fam-start"><td class="code">${esc(f.code)}</td><td colspan="4">No viene</td></tr>`).join('');
 }
 
 /* ---------- tasks: one list for roles and logistics ---------- */
@@ -1463,7 +1471,7 @@ function applyLayers(){
   [['codes','ly-codes'],['props','ly-props'],['roofs','ly-roofs']].forEach(([k,id])=>$(id).setAttribute('aria-pressed',String(LAYERS[k])));
 }
 [['codes','ly-codes'],['props','ly-props'],['roofs','ly-roofs']].forEach(([k,id])=>$(id).addEventListener('click',()=>{LAYERS[k]=!LAYERS[k];ST.layers=LAYERS;saveState();applyLayers();if(k==='codes'&&PL){drawParade(PL);drawBarra(PL);}}));
-$('f-filter').addEventListener('input',()=>renderTable(PL));
+$('f-fam').addEventListener('change',e=>{ST.famSel=e.target.value;saveState();renderTable(PL);});
 function overMsg(){const n=Object.keys(ST.over).length;$('over-msg').textContent=n?`${n} asignación${n>1?'es':''} manual${n>1?'es':''}`:'';}
 $('tbody').addEventListener('change',e=>{const s=e.target.closest('select[data-k]');if(!s)return;
   if(s.value)ST.over[s.dataset.k]=s.value;else delete ST.over[s.dataset.k];saveState();overMsg();rebuild();});
@@ -1619,17 +1627,26 @@ if(!ST.resumenDef){ST.resumenDef=1;if(!(new URLSearchParams(location.search).get
 if(!ST.criteriosDef){ST.criteriosDef=1;if(!(new URLSearchParams(location.search).get('clave')||store.get('desfile-clave'))&&!ST.closed.includes('s-criterios'))ST.closed.push('s-criterios');}
 // the 2D plans start collapsed for everyone (once; after that each viewer's choice is kept)
 if(!ST.planosDef){ST.planosDef=1;['s-desfile','s-barra'].forEach(id=>{if(!ST.closed.includes(id))ST.closed.push(id);});}
+// layout 3: only the 3D viewer starts open; everything else collapsed
+if(!ST.layout3){ST.layout3=1;ST.closed=[...document.querySelectorAll('details.card')].map(d=>d.id).filter(id=>id!=='s-visor');}
 document.querySelectorAll('details.card').forEach(d=>{
   if(ST.closed.includes(d.id))d.open=false;
-  d.addEventListener('toggle',()=>{ST.closed=[...document.querySelectorAll('details.card:not([open])')].map(x=>x.id);saveState();if(d.id==='s-visor'&&d.open)resize();if((d.id==='s-desfile'||d.id==='s-barra')&&d.open&&PL){drawParade(PL);drawBarra(PL);}});
+  d.addEventListener('toggle',()=>{ST.closed=[...document.querySelectorAll('details.card:not([open])')].map(x=>x.id);saveState();if(d.id==='s-visor'&&d.open)resize();if(d.id==='s-planos'&&d.open&&PL){drawParade(PL);drawBarra(PL);}});
 });
 document.querySelectorAll('.jump a').forEach(a=>a.addEventListener('click',()=>{const d=document.querySelector(a.getAttribute('href'));if(d&&d.tagName==='DETAILS')d.open=true;}));
 // highlight the section on screen in the menu
 const navLinks=[...document.querySelectorAll('.jump a')];
+// plan tabs (remembered per device)
+function setPlanTab(t){ST.planTab=t;document.querySelectorAll('[data-pt]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.pt===t)));
+  document.querySelectorAll('[data-pane]').forEach(x=>x.hidden=x.dataset.pane!==t);
+  $('planos-help').hidden=t==='simple';$('planos-help').dataset.help=t;
+  if(PL&&t!=='simple'){drawParade(PL);drawBarra(PL);}}
+document.querySelectorAll('[data-pt]').forEach(b=>b.addEventListener('click',()=>{setPlanTab(b.dataset.pt);saveState();}));
+setPlanTab(ST.planTab||'simple');
 const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting)navLinks.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+en.target.id));}),{rootMargin:'-40% 0px -55% 0px'});
 document.querySelectorAll('details.card').forEach(d=>io.observe(d));
 let drawTimer,lastW=0;
-new ResizeObserver(()=>{const w=$('s-desfile').clientWidth;if(Math.abs(w-lastW)<8||!PL)return;lastW=w;clearTimeout(drawTimer);drawTimer=setTimeout(()=>{drawParade(PL);drawBarra(PL);},150);}).observe(document.querySelector('.wrap'));
+new ResizeObserver(()=>{const w=$('s-planos').clientWidth;if(Math.abs(w-lastW)<8||!PL)return;lastW=w;clearTimeout(drawTimer);drawTimer=setTimeout(()=>{drawParade(PL);drawBarra(PL);},150);}).observe(document.querySelector('.wrap'));
 $('jump-sel').addEventListener('change',e=>{const v=e.target.value;if(!v)return;const d=document.querySelector(v);if(d){if(d.tagName==='DETAILS')d.open=true;d.scrollIntoView({block:'start'});}e.target.value='';});
 function rememberView(){ST.T=T;ST.view=view;saveNow();}
 addEventListener('pagehide',rememberView);document.addEventListener('visibilitychange',()=>{if(document.hidden)rememberView();});
@@ -1710,8 +1727,8 @@ async function push(){const data=shared(),str=JSON.stringify(data);
     REV=j.rev;LAST_AT=j.at;synced=str;store.set(SYNC_KEY,JSON.stringify({rev:j.rev,at:j.at,data}));pushTimer=null;
     if(pending())queuePush();else syncMsg('Administrador · Guardado en la hoja · '+hhmm(j.at),'ok');}
   catch(e){syncMsg('No se pudo guardar; reintento en 10 s.','err');pushTimer=setTimeout(push,10000);}}
-function setAdmin(k){ADMIN=k;if(k)store.set(KEY_KEY,k);else store.del(KEY_KEY);document.body.classList.toggle('ro',!k);$('admin-key').value=k;
-  $('admin-msg').textContent=k?'Modo administrador: tus cambios se guardan en la hoja.':'Solo lectura.';if(PL)renderAtt();}
+function setAdmin(k){ADMIN=k;document.querySelectorAll('option.admin-link').forEach(o=>{o.hidden=!k;o.disabled=!k;});if(k)store.set(KEY_KEY,k);else store.del(KEY_KEY);document.body.classList.toggle('ro',!k);$('admin-key').value=k;
+  $('admin-msg').textContent=k?'Modo administrador: tus cambios se guardan en la hoja.':'Solo lectura.';if(PL){renderAtt();renderTable(PL);}}
 $('admin-in').addEventListener('click',async()=>{const k=$('admin-key').value.trim();if(!k)return;$('admin-msg').textContent='Comprobando…';
   try{const j=await(await fetch(API,{method:'POST',body:JSON.stringify({key:k,check:true})})).json();
     if(j.ok){setAdmin(k);REV=0;pull();}else $('admin-msg').textContent='Clave incorrecta.';}catch(e){$('admin-msg').textContent='No hay conexión con la hoja.';}});
