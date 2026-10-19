@@ -1579,8 +1579,10 @@ $('att-live').addEventListener('change',e=>{ST.attLive=e.target.checked;attChang
 $('att-reset').addEventListener('click',()=>{ST.att={};attChanged();$('att-msg').textContent='Asistencia reiniciada: todos pendientes.';});
 function attRows(){return FAMS.map(f=>{const a=ST.att[f.code]||{};const st=k=>f.absent?'no':a[k]==='si'?'viene':a[k]==='no'?'no viene':'pendiente';
   return {f,papa:f.genders.includes('papa')?st('papa'):'—',mama:f.genders.includes('mama')?st('mama'):'—',kids:[...Array(f.kids).keys()].map(i=>st('h'+(i+1)))};});}
+// one table for the sheet and the CSV; surnames come only from the private names file (never from the repo)
+function attTable(){return [['Código','Apellidos','Grado','Papá','Mamá','Hijo 1','Hijo 2']].concat(attRows().map(r=>[r.f.code,(NAMES&&NAMES[r.f.code]&&NAMES[r.f.code].familia)||'',r.f.grades.join('/'),r.papa,r.mama,r.kids[0]||'',r.kids[1]||'']));}
 $('att-csv').addEventListener('click',()=>{
-  const rows=[['codigo','grado','papa','mama','hijo1','hijo2']].concat(attRows().map(r=>[r.f.code,r.f.grades.join('/'),r.papa,r.mama,r.kids[0]||'',r.kids[1]||'']));
+  const rows=attTable();
   const csv=rows.map(r=>r.map(x=>/[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x).join(',')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='asistencia-desfile.csv';document.body.appendChild(a);a.click();a.remove();
   $('att-msg').textContent='CSV descargado (se abre en Excel o Google Sheets).';});
@@ -1597,7 +1599,8 @@ $('simple-names').addEventListener('change',e=>{ST.simpleNames=e.target.checked;
 function namesChanged(){namesMsg();if(PL){renderInfo(PL);drawSimple(PL);}if(!apanel.hidden)renderAtt();}
 $('names-file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{try{const d=JSON.parse(r.result);const fams=d.familias||d;if(typeof fams!=='object'||Array.isArray(fams))throw 0;
-      NAMES=fams;try{localStorage.setItem(NAMES_KEY,JSON.stringify(fams));}catch(err){}ST.showNames=true;saveState();namesChanged();}
+      NAMES=fams;try{localStorage.setItem(NAMES_KEY,JSON.stringify(fams));}catch(err){}ST.showNames=true;saveState();namesChanged();
+      if(ADMIN&&synced!==null){synced='';queuePush();}}// rewrite the sheet so Desfile_Asistencia gets the surnames
     catch(err){$('names-msg').textContent='No pude leer el archivo: tiene que ser el .json de nombres.';}
     e.target.value='';};
   r.readAsText(f);});
@@ -1717,7 +1720,7 @@ async function pull(manual){if(manual===true&&!pulling)syncMsg('Mostrando lo gua
 function queuePush(){if(!ADMIN||synced===null||!API.startsWith('http')||!pending())return;
   syncMsg('Guardando en la hoja…','wait');clearTimeout(pushTimer);pushTimer=setTimeout(push,1200);}
 function sheetTables(){
-  const asistencia=[['Código','Grado','Papá','Mamá','Hijo 1','Hijo 2']].concat(attRows().map(r=>[r.f.code,r.f.grades.join('/'),r.papa,r.mama,r.kids[0]||'',r.kids[1]||'']));
+  const asistencia=attTable();
   const tareas=[['#','Tarea','Tipo','Responsable','Fecha y hora','Comentario','Lista']].concat(TASKS_CUR.map((x,i)=>{const t=ST.tasks[x.id]||{};return [i+1,x.title||'',x.kind,t.resp||x.auto||'',t.when||'',t.note||'',t.done?'sí':'no'];}));
   return {asistencia,tareas};}
 async function push(){const data=shared(),str=JSON.stringify(data);
